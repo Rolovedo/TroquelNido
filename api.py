@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware #type: ignore[import-not-foun
 from pydantic import BaseModel #type: ignore[import-not-found]
 
 import nido_core as nc
+from config import cargar_configuracion
 
 
 app = FastAPI(title="NIDO", description="Generador de troqueles de embalaje")
@@ -12,6 +13,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+CONFIG = cargar_configuracion()
 
 
 class TroquelRequest(BaseModel):
@@ -21,6 +23,9 @@ class TroquelRequest(BaseModel):
     ancho: float
     alto: float
     peso: float | None = None
+    g: float | None = None
+    d: float | None = None
+    flauta: str | None = None
 
 
 def crear_entrada(request: TroquelRequest) -> nc.Entrada:
@@ -31,6 +36,9 @@ def crear_entrada(request: TroquelRequest) -> nc.Entrada:
         ancho=request.ancho,
         alto=request.alto,
         peso_kg=request.peso,
+        g=request.g,
+        d=request.d,
+        flauta=request.flauta,
     )
 
 
@@ -39,13 +47,14 @@ def opciones() -> dict[str, list[str]]:
     return {
         "tipos": list(nc.TIPO_PRODUCTO),
         "materiales": list(nc.MATERIAL_PRODUCTO),
+        "flautas": [flauta[0] for flauta in CONFIG.flautas],
     }
 
 
 @app.post("/troquel")
 def troquel(request: TroquelRequest) -> dict:
     try:
-        resultado = nc.calcular(crear_entrada(request))
+        resultado = nc.calcular(crear_entrada(request), CONFIG)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 

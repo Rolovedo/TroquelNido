@@ -8,6 +8,10 @@ import json, sys, html
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
 import nido_core as nc
+from config import cargar_configuracion
+
+
+CONFIG = cargar_configuracion()
 
 
 def elegir(titulo, opciones):
@@ -46,7 +50,7 @@ def consola():
     print("\nDimensiones del producto en milímetros.")
     L = numero("Largo (mm): "); A = numero("Ancho (mm): "); H = numero("Alto (mm): ")
     p = numero("Peso en kg (Enter si no lo sabes): ", opcional=True)
-    r = nc.calcular(nc.Entrada(tipo, mat, L, A, H, p))
+    r = nc.calcular(nc.Entrada(tipo, mat, L, A, H, p), CONFIG)
     guardar(r)
     print()
     for line in nc.pasos(r): print(line)
@@ -55,9 +59,9 @@ def consola():
 
 
 FORM = """<!doctype html><meta charset=utf-8><title>NIDO</title>
-<style>body{font-family:system-ui;max-width:1000px;margin:24px auto;padding:0 16px}
-label{display:block;margin:8px 0 2px}input,select{padding:6px;width:260px}button{margin-top:12px;padding:8px 16px}
-pre{background:#f6f1e4;padding:12px;white-space:pre-wrap}.w{color:#b35c00}</style>
+<style>body{{font-family:system-ui;max-width:1000px;margin:24px auto;padding:0 16px}}
+label{{display:block;margin:8px 0 2px}}input,select{{padding:6px;width:260px}}button{{margin-top:12px;padding:8px 16px}}
+pre{{background:#f6f1e4;padding:12px;white-space:pre-wrap}}.w{{color:#b35c00}}</style>
 <h1>NIDO · generador de troquel</h1>
 <form method=post>
 <label>Tipo de producto<select name=tipo>{tipos}</select></label>
@@ -66,15 +70,21 @@ pre{background:#f6f1e4;padding:12px;white-space:pre-wrap}.w{color:#b35c00}</styl
 <label>Ancho (mm)<input name=ancho type=number step=any required value="{ancho}"></label>
 <label>Alto (mm)<input name=alto type=number step=any required value="{alto}"></label>
 <label>Peso (kg, opcional)<input name=peso type=number step=any value="{peso}"></label>
+<label>Holgura g (mm, opcional)<input name=g type=number min=0 step=any value="{g}"></label>
+<label>Profundidad d del panal (mm, opcional)<input name=d type=number min=0 step=any value="{d}"></label>
+<label>Flauta (opcional)<select name=flauta><option value="">Automática según peso</option>{flautas}</select></label>
 <button>Generar troquel</button></form>{resultado}"""
 
 
 def pagina(v=None, resultado=""):
     v = v or {}
     opt = lambda d, sel: "".join(f'<option{" selected" if k == sel else ""}>{html.escape(k)}</option>' for k in d)
+    flautas = "".join(f'<option{" selected" if f[0] == v.get("flauta") else ""}>{f[0]}</option>'
+                      for f in CONFIG.flautas)
     return FORM.format(tipos=opt(nc.TIPO_PRODUCTO, v.get("tipo")), mats=opt(nc.MATERIAL_PRODUCTO, v.get("material")),
                        largo=v.get("largo", ""), ancho=v.get("ancho", ""), alto=v.get("alto", ""),
-                       peso=v.get("peso", ""), resultado=resultado)
+                       peso=v.get("peso", ""), g=v.get("g", ""), d=v.get("d", ""),
+                       flautas=flautas, resultado=resultado)
 
 
 class H(BaseHTTPRequestHandler):
@@ -90,7 +100,10 @@ class H(BaseHTTPRequestHandler):
         v = {k: x[0] for k, x in q.items()}
         try:
             peso = float(v["peso"]) if v.get("peso") else None
-            r = nc.calcular(nc.Entrada(v["tipo"], v["material"], float(v["largo"]), float(v["ancho"]), float(v["alto"]), peso))
+            g = float(v["g"]) if v.get("g") else None
+            d = float(v["d"]) if v.get("d") else None
+            r = nc.calcular(nc.Entrada(v["tipo"], v["material"], float(v["largo"]), float(v["ancho"]),
+                                        float(v["alto"]), peso, v.get("flauta") or None, g, d), CONFIG)
             res = nc.svg(r, 0.5) + "<pre>" + html.escape("\n".join(nc.pasos(r))) + "</pre>"
             res += "".join(f'<p class=w>⚠ {html.escape(a)}</p>' for a in r.advertencias)
         except Exception as ex:
@@ -102,7 +115,7 @@ if __name__ == "__main__":
     if "--web" in sys.argv:
         print("http://localhost:8000"); HTTPServer(("", 8000), H).serve_forever()
     elif "--demo" in sys.argv:
-        r = nc.calcular(nc.Entrada("cerámica / taza", "cerámica", 120, 95, 100, 0.4))
+        r = nc.calcular(nc.Entrada("cerámica / taza", "cerámica", 120, 95, 100, 0.4), CONFIG)
         guardar(r); print("\n".join(nc.pasos(r)))
     else:
         consola()

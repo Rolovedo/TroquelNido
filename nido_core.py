@@ -5,7 +5,7 @@ Salida  : dimensiones del troquel, pasos de trazado con coordenadas, tiras de
           panal y un SVG del troquel (corte continuo, pliegue punteado).
 
 Todos los valores de holgura/espesor son PUNTOS DE PARTIDA: se calibran con la
-prueba de caída (Fase 4 del documento) y se editan en las tablas de abajo.
+prueba de caída (Fase 4 del documento) y se editan en config.json.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
@@ -25,11 +25,13 @@ MATERIAL_PRODUCTO = {
     "tela": 1, "papel": 1, "madera": 2, "plástico": 2, "metal": 2,
     "yeso / resina": 3, "cerámica": 4, "vidrio": 4,
 }
-# fragilidad -> (g: holgura producto-pared interior, d: profundidad del panal) en mm
-HOLGURAS = {1: (3, 6), 2: (5, 10), 3: (6, 12), 4: (8, 15)}
-# cartón corrugado: nombre -> espesor mm, peso máx. recomendado kg
-FLAUTAS = [("E", 1.5, 2.0), ("B", 3.0, 8.0), ("C", 4.0, 15.0)]
 HOJA_MAX = (1200.0, 800.0)  # hoja/plancha máxima de la troqueladora (mm), editable
+
+
+@dataclass(frozen=True)
+class Configuracion:
+    holguras: dict[int, tuple[float, float]]
+    flautas: list[tuple[str, float, float]]
 
 
 @dataclass
@@ -41,6 +43,8 @@ class Entrada:
     alto: float    # mm
     peso_kg: float | None = None
     flauta: str | None = None   # forzar E/B/C; None = automático
+    g: float | None = None      # override opcional de holgura
+    d: float | None = None      # override opcional de profundidad del panal
 
     def validar(self):
         if self.tipo not in TIPO_PRODUCTO:
@@ -52,6 +56,9 @@ class Entrada:
                 raise ValueError(f"{n} fuera de rango (10–1000 mm): {v}")
         if self.peso_kg is not None and self.peso_kg <= 0:
             raise ValueError("El peso debe ser positivo")
+        for n, v in (("g", self.g), ("d", self.d)):
+            if v is not None and v < 0:
+                raise ValueError(f"{n} no puede ser negativo")
 
 
 @dataclass
@@ -74,23 +81,28 @@ class Resultado:
     advertencias: list = field(default_factory=list)
 
 
-def calcular(e: Entrada) -> Resultado:
+def calcular(e: Entrada, config: Configuracion) -> Resultado:
     e.validar()
     frag = max(TIPO_PRODUCTO[e.tipo], MATERIAL_PRODUCTO[e.material])
-    g, d = HOLGURAS[frag]
+    try:
+        g, d = config.holguras[frag]
+    except KeyError as error:
+        raise ValueError(f"No hay holgura configurada para fragilidad {frag}") from error
+    g = e.g if e.g is not None else g
+    d = e.d if e.d is not None else d
 
     # Selección de flauta por peso (o la forzada)
     adv = []
     if e.flauta:
-        flauta = next((f for f in FLAUTAS if f[0] == e.flauta.upper()), None)
+        flauta = next((f for f in config.flautas if f[0] == e.flauta.upper()), None)
         if not flauta:
             raise ValueError("Flauta debe ser E, B o C")
     else:
         peso = e.peso_kg if e.peso_kg is not None else 1.0
-        flauta = next((f for f in FLAUTAS if peso <= f[2]), FLAUTAS[-1])
+        flauta = next((f for f in config.flautas if peso <= f[2]), config.flautas[-1])
         if e.peso_kg is None:
             adv.append("No se indicó peso: se asumió ≤ 2 kg (flauta E).")
-    if e.peso_kg and e.peso_kg > FLAUTAS[-1][2]:
+    if e.peso_kg and e.peso_kg > config.flautas[-1][2]:
         adv.append("Peso > 15 kg: usar cartón de pared doble (BC); el modelo no lo cubre.")
     _, t, _ = flauta
 

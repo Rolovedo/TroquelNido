@@ -1,0 +1,13 @@
+{
+  "holguras": {
+    "1": [3, 6],
+    "2": [5, 10],
+    "3": [6, 12],
+    "4": [8, 15]
+  },
+  "flautas": [
+    {"codigo": "E", "espesor": 1.5, "peso_max": 2.0},
+    {"codigo": "B", "espesor": 3.0, "peso_max": 8.0},
+    {"codigo": "C", "espesor": 4.0, "peso_max": 15.0}
+  ]
+}

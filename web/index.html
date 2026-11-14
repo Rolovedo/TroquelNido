@@ -74,6 +74,20 @@
           <label for="peso">Peso (kg, opcional)</label>
           <input id="peso" name="peso" type="number" min="0.001" step="any">
         </div>
+        <div class="field">
+          <label for="g">Holgura g (mm, opcional)</label>
+          <input id="g" name="g" type="number" min="0" step="any">
+        </div>
+        <div class="field">
+          <label for="d">Profundidad d del panal (mm, opcional)</label>
+          <input id="d" name="d" type="number" min="0" step="any">
+        </div>
+        <div class="field">
+          <label for="flauta">Flauta (opcional)</label>
+          <select id="flauta" name="flauta">
+            <option value="">Automática según el peso</option>
+          </select>
+        </div>
         <button id="generate" type="submit">Generar troquel</button>
         <button id="download" class="secondary" type="button" disabled>Descargar SVG</button>
         <button id="download-png" class="secondary" type="button" disabled>Descargar PNG</button>
@@ -101,6 +115,7 @@
     const form = document.querySelector("#troquel-form");
     const tipo = document.querySelector("#tipo");
     const material = document.querySelector("#material");
+    const flauta = document.querySelector("#flauta");
     const preview = document.querySelector("#preview");
     const steps = document.querySelector("#steps");
     const status = document.querySelector("#status");
@@ -114,6 +129,7 @@
       for (const [select, valores] of [[tipo, opciones.tipos], [material, opciones.materiales]]) {
         select.replaceChildren(...valores.map(valor => new Option(valor, valor)));
       }
+      flauta.append(...opciones.flautas.map(valor => new Option(valor, valor)));
     }
 
     async function leerError(response) {
@@ -142,8 +158,11 @@
       download.disabled = true;
       const datos = Object.fromEntries(new FormData(form));
       for (const campo of ["largo", "ancho", "alto"]) datos[campo] = Number(datos[campo]);
-      if (datos.peso === "") delete datos.peso;
-      else datos.peso = Number(datos.peso);
+      for (const campo of ["peso", "g", "d"]) {
+        if (datos[campo] === "") delete datos[campo];
+        else datos[campo] = Number(datos[campo]);
+      }
+      if (datos.flauta === "") delete datos.flauta;
 
       try {
         const response = await fetch(`${API_URL}/troquel`, {
