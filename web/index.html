@@ -59,16 +59,23 @@
           <select id="material" name="material" required></select>
         </div>
         <div class="field">
-          <label for="largo">Largo (mm)</label>
-          <input id="largo" name="largo" type="number" min="10" max="1000" step="any" required>
+          <label for="unidad">Unidad de medida</label>
+          <select id="unidad" name="unidad">
+            <option value="mm">Milímetros (mm)</option>
+            <option value="cm">Centímetros (cm)</option>
+          </select>
         </div>
         <div class="field">
-          <label for="ancho">Ancho (mm)</label>
-          <input id="ancho" name="ancho" type="number" min="10" max="1000" step="any" required>
+          <label for="largo">Largo</label>
+          <input id="largo" name="largo" type="number" min="0.1" step="any" required>
         </div>
         <div class="field">
-          <label for="alto">Alto (mm)</label>
-          <input id="alto" name="alto" type="number" min="10" max="1000" step="any" required>
+          <label for="ancho">Ancho</label>
+          <input id="ancho" name="ancho" type="number" min="0.1" step="any" required>
+        </div>
+        <div class="field">
+          <label for="alto">Alto</label>
+          <input id="alto" name="alto" type="number" min="0.1" step="any" required>
         </div>
         <div class="field">
           <label for="peso">Peso (kg, opcional)</label>
@@ -115,6 +122,7 @@
     const form = document.querySelector("#troquel-form");
     const tipo = document.querySelector("#tipo");
     const material = document.querySelector("#material");
+    const unidad = document.querySelector("#unidad");
     const flauta = document.querySelector("#flauta");
     const preview = document.querySelector("#preview");
     const steps = document.querySelector("#steps");
@@ -124,6 +132,14 @@
     const downloadPng = document.querySelector("#download-png");
     const downloadPdf = document.querySelector("#download-pdf");
     let svg = "";
+
+    function actualizarRango() {
+      const esCm = unidad.value === "cm";
+      for (const campo of ["largo", "ancho", "alto"]) {
+        document.querySelector(`#${campo}`).min = esCm ? "1" : "10";
+        document.querySelector(`#${campo}`).max = esCm ? "100" : "1000";
+      }
+    }
 
     function cargarOpciones(opciones) {
       for (const [select, valores] of [[tipo, opciones.tipos], [material, opciones.materiales]]) {
@@ -194,6 +210,7 @@
       }
     });
 
+    unidad.addEventListener("change", actualizarRango);
     download.addEventListener("click", () => {
       const enlace = document.createElement("a");
       enlace.href = URL.createObjectURL(new Blob([svg], {type: "image/svg+xml"}));
@@ -267,6 +284,7 @@
       }
     });
 
+    actualizarRango();
     iniciar();
   </script>
 </body>

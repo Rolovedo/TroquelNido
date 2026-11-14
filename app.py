@@ -66,9 +66,10 @@ pre{{background:#f6f1e4;padding:12px;white-space:pre-wrap}}.w{{color:#b35c00}}</
 <form method=post>
 <label>Tipo de producto<select name=tipo>{tipos}</select></label>
 <label>Material<select name=material>{mats}</select></label>
-<label>Largo (mm)<input name=largo type=number step=any required value="{largo}"></label>
-<label>Ancho (mm)<input name=ancho type=number step=any required value="{ancho}"></label>
-<label>Alto (mm)<input name=alto type=number step=any required value="{alto}"></label>
+<label>Unidad<select name=unidad><option value="mm">Milímetros (mm)</option><option value="cm">Centímetros (cm)</option></select></label>
+<label>Largo<input name=largo type=number step=any required value="{largo}"></label>
+<label>Ancho<input name=ancho type=number step=any required value="{ancho}"></label>
+<label>Alto<input name=alto type=number step=any required value="{alto}"></label>
 <label>Peso (kg, opcional)<input name=peso type=number step=any value="{peso}"></label>
 <label>Holgura g (mm, opcional)<input name=g type=number min=0 step=any value="{g}"></label>
 <label>Profundidad d del panal (mm, opcional)<input name=d type=number min=0 step=any value="{d}"></label>
@@ -99,11 +100,15 @@ class H(BaseHTTPRequestHandler):
         q = parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode())
         v = {k: x[0] for k, x in q.items()}
         try:
+            unidad = v.get("unidad", "mm")
             peso = float(v["peso"]) if v.get("peso") else None
-            g = float(v["g"]) if v.get("g") else None
-            d = float(v["d"]) if v.get("d") else None
-            r = nc.calcular(nc.Entrada(v["tipo"], v["material"], float(v["largo"]), float(v["ancho"]),
-                                        float(v["alto"]), peso, v.get("flauta") or None, g, d), CONFIG)
+            def convertir(valor):
+                if valor is None or valor == "":
+                    return None
+                return nc.convertir_a_mm(float(valor), unidad)
+            r = nc.calcular(nc.Entrada(v["tipo"], v["material"],
+                                        convertir(v["largo"]), convertir(v["ancho"]), convertir(v["alto"]),
+                                        peso, v.get("flauta") or None, convertir(v.get("g")), convertir(v.get("d"))), CONFIG)
             res = nc.svg(r, 0.5) + "<pre>" + html.escape("\n".join(nc.pasos(r))) + "</pre>"
             res += "".join(f'<p class=w>⚠ {html.escape(a)}</p>' for a in r.advertencias)
         except Exception as ex:

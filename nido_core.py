@@ -28,6 +28,15 @@ MATERIAL_PRODUCTO = {
 HOJA_MAX = (1200.0, 800.0)  # hoja/plancha máxima de la troqueladora (mm), editable
 
 
+def convertir_a_mm(valor: float, unidad: str) -> float:
+    """Convierte una medida de cm o mm a milímetros."""
+    if unidad == "mm":
+        return valor
+    if unidad == "cm":
+        return valor * 10
+    raise ValueError("La unidad debe ser mm o cm")
+
+
 @dataclass(frozen=True)
 class Configuracion:
     holguras: dict[int, tuple[float, float]]

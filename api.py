@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException #type: ignore[import-not-found]
 from fastapi.middleware.cors import CORSMiddleware #type: ignore[import-not-found]
 from pydantic import BaseModel #type: ignore[import-not-found]
+from typing import Literal
 
 import nido_core as nc
 from config import cargar_configuracion
@@ -19,6 +20,7 @@ CONFIG = cargar_configuracion()
 class TroquelRequest(BaseModel):
     tipo: str
     material: str
+    unidad: Literal["mm", "cm"] = "mm"
     largo: float
     ancho: float
     alto: float
@@ -29,15 +31,16 @@ class TroquelRequest(BaseModel):
 
 
 def crear_entrada(request: TroquelRequest) -> nc.Entrada:
+    convertir = lambda valor: nc.convertir_a_mm(valor, request.unidad) if valor is not None else None
     return nc.Entrada(
         tipo=request.tipo,
         material=request.material,
-        largo=request.largo,
-        ancho=request.ancho,
-        alto=request.alto,
+        largo=nc.convertir_a_mm(request.largo, request.unidad),
+        ancho=nc.convertir_a_mm(request.ancho, request.unidad),
+        alto=nc.convertir_a_mm(request.alto, request.unidad),
         peso_kg=request.peso,
-        g=request.g,
-        d=request.d,
+        g=convertir(request.g),
+        d=convertir(request.d),
         flauta=request.flauta,
     )
 

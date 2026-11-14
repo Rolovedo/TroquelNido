@@ -7,6 +7,11 @@ from config import cargar_configuracion
 CONFIG = cargar_configuracion()
 
 
+@pytest.mark.parametrize(("valor", "unidad", "esperado"), [(25, "mm", 25), (2.5, "cm", 25)])
+def test_convierte_medidas_a_milimetros(valor, unidad, esperado):
+    assert nc.convertir_a_mm(valor, unidad) == esperado
+
+
 def entrada_valida(**cambios):
     valores = {
         "tipo": "libro / papel",
