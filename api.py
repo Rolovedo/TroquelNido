@@ -1,10 +1,17 @@
 from fastapi import FastAPI, HTTPException #type: ignore[import-not-found]
+from fastapi.middleware.cors import CORSMiddleware #type: ignore[import-not-found]
 from pydantic import BaseModel #type: ignore[import-not-found]
 
 import nido_core as nc
 
 
 app = FastAPI(title="NIDO", description="Generador de troqueles de embalaje")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class TroquelRequest(BaseModel):
