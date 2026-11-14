@@ -76,6 +76,8 @@
         </div>
         <button id="generate" type="submit">Generar troquel</button>
         <button id="download" class="secondary" type="button" disabled>Descargar SVG</button>
+        <button id="download-png" class="secondary" type="button" disabled>Descargar PNG</button>
+        <button id="download-pdf" class="secondary" type="button" disabled>Descargar PDF 1:1</button>
         <p id="status" class="status" role="status" aria-live="polite"></p>
       </form>
 
@@ -92,6 +94,8 @@
     </div>
   </main>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.4/dist/svg2pdf.umd.min.js"></script>
   <script>
     const API_URL = "http://127.0.0.1:8000";
     const form = document.querySelector("#troquel-form");
@@ -102,6 +106,8 @@
     const status = document.querySelector("#status");
     const generate = document.querySelector("#generate");
     const download = document.querySelector("#download");
+    const downloadPng = document.querySelector("#download-png");
+    const downloadPdf = document.querySelector("#download-pdf");
     let svg = "";
 
     function cargarOpciones(opciones) {
@@ -155,11 +161,15 @@
           return item;
         }));
         download.disabled = false;
+        downloadPng.disabled = false;
+        downloadPdf.disabled = false;
         status.textContent = "Troquel generado correctamente.";
       } catch (error) {
         status.textContent = `No se pudo generar el troquel: ${error.message}`;
         preview.innerHTML = '<p class="empty">No hay una vista previa disponible.</p>';
         steps.innerHTML = '<li class="empty">No hay pasos para mostrar.</li>';
+        downloadPng.disabled = true;
+        downloadPdf.disabled = true;
       } finally {
         generate.disabled = false;
       }
@@ -171,6 +181,71 @@
       enlace.download = "nido_troquel.svg";
       enlace.click();
       URL.revokeObjectURL(enlace.href);
+    });
+
+    function dimensionesSvg() {
+      const nodo = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;
+      const viewBox = nodo.getAttribute("viewBox").trim().split(/\s+/).map(Number);
+      if (viewBox.length !== 4 || viewBox.some(Number.isNaN) || viewBox[2] <= 0 || viewBox[3] <= 0) {
+        throw new Error("El SVG no tiene dimensiones válidas.");
+      }
+      return { nodo, ancho: viewBox[2], alto: viewBox[3] };
+    }
+
+    function descargarBlob(blob, nombre) {
+      const enlace = document.createElement("a");
+      enlace.href = URL.createObjectURL(blob);
+      enlace.download = nombre;
+      enlace.click();
+      setTimeout(() => URL.revokeObjectURL(enlace.href), 0);
+    }
+
+    downloadPng.addEventListener("click", async () => {
+      try {
+        const { ancho, alto } = dimensionesSvg();
+        const imagen = new Image();
+        const url = URL.createObjectURL(new Blob([svg], {type: "image/svg+xml"}));
+        imagen.onload = () => {
+          const escala = 96 / 25.4;
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.ceil(ancho * escala);
+          canvas.height = Math.ceil(alto * escala);
+          canvas.getContext("2d").drawImage(imagen, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(blob => {
+            if (blob) descargarBlob(blob, "nido_troquel.png");
+          }, "image/png");
+          URL.revokeObjectURL(url);
+        };
+        imagen.onerror = () => {
+          URL.revokeObjectURL(url);
+          throw new Error("No se pudo convertir el SVG a PNG.");
+        };
+        imagen.src = url;
+      } catch (error) {
+        status.textContent = `No se pudo exportar el PNG: ${error.message}`;
+      }
+    });
+
+    downloadPdf.addEventListener("click", async () => {
+      try {
+        if (!window.jspdf || typeof window.jspdf.jsPDF !== "function") {
+          throw new Error("No se cargaron las herramientas de exportación PDF.");
+        }
+        const { nodo, ancho, alto } = dimensionesSvg();
+        const orientacion = ancho > alto ? "landscape" : "portrait";
+        const pdf = new window.jspdf.jsPDF({
+          orientation: orientacion,
+          unit: "mm",
+          format: [ancho, alto]
+        });
+        if (typeof pdf.svg !== "function") {
+          throw new Error("La conversión SVG a PDF no está disponible.");
+        }
+        await pdf.svg(nodo, {x: 0, y: 0, width: ancho, height: alto});
+        pdf.save("nido_troquel.pdf");
+      } catch (error) {
+        status.textContent = `No se pudo exportar el PDF: ${error.message}`;
+      }
     });
 
     iniciar();
