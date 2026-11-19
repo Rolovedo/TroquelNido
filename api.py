@@ -28,6 +28,7 @@ class TroquelRequest(BaseModel):
     g: float | None = None
     d: float | None = None
     flauta: str | None = None
+    encastre: bool = True
 
 
 def crear_entrada(request: TroquelRequest) -> nc.Entrada:
@@ -42,6 +43,7 @@ def crear_entrada(request: TroquelRequest) -> nc.Entrada:
         g=convertir(request.g),
         d=convertir(request.d),
         flauta=request.flauta,
+        encastre=request.encastre,
     )
 
 

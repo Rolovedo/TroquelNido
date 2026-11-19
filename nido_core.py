@@ -54,6 +54,7 @@ class Entrada:
     flauta: str | None = None   # forzar E/B/C; None = automático
     g: float | None = None      # override opcional de holgura
     d: float | None = None      # override opcional de profundidad del panal
+    encastre: bool = True       # True = cierre completo; False = modo cruz anterior
 
     def validar(self):
         if self.tipo not in TIPO_PRODUCTO:
@@ -88,6 +89,8 @@ class Resultado:
     ancho_total: float
     alto_total: float
     advertencias: list = field(default_factory=list)
+    encastre: bool = True
+    encastre_datos: dict = field(default_factory=dict)
 
 
 def calcular(e: Entrada, config: Configuracion) -> Resultado:
@@ -125,21 +128,207 @@ def calcular(e: Entrada, config: Configuracion) -> Resultado:
     tab_l = 15.0
     slot_off = max(8.0, 2 * t + 4)
 
+    if e.encastre:
+        off_encastre = t + d + t / 2
+        solapa_trasera_l = max(0.0, Lb - 2 * (t + d))
+        solapa_frontal_l = solapa_trasera_l
+        solapa_lateral_l = max(0.0, Wb - 2 * (2 * t + d))
+        tab_chaflan = 3.0
+        tab_alto = 15.0
+
+        def ancho_lengüeta(lado: float) -> float:
+            disponible = max(0.0, lado - 2 * tab_chaflan)
+            ancho = min(max(0.25 * lado, 30.0), 60.0)
+            ancho = min(ancho, disponible)
+            return ancho
+
+        tab_trasera = ancho_lengüeta(solapa_trasera_l)
+        tab_frontal = tab_trasera
+        tab_izquierda = ancho_lengüeta(solapa_lateral_l)
+        tab_derecha = tab_izquierda
+
+        if 2 * t > d:
+            adv.append(f"Orejas no recomendadas: 2·t ({2*t:.1f} mm) es mayor que d ({d:.1f} mm). "
+                       "Aumenta d o reduce la flauta.")
+        if solapa_trasera_l < 30 + 2 * tab_chaflan:
+            adv.append("La solapa trasera/frontal es demasiado corta para una lengüeta completa de 30 mm; "
+                       "se redujo su ancho automáticamente.")
+        if solapa_lateral_l < 30 + 2 * tab_chaflan:
+            adv.append("La solapa izquierda/derecha es demasiado corta para una lengüeta completa de 30 mm; "
+                       "se redujo su ancho automáticamente.")
+
+        resultado_encastre = dict(
+            off_encastre=off_encastre,
+            solapa_trasera_l=solapa_trasera_l,
+            solapa_frontal_l=solapa_frontal_l,
+            solapa_lateral_l=solapa_lateral_l,
+            tab_trasera=tab_trasera,
+            tab_frontal=tab_frontal,
+            tab_izquierda=tab_izquierda,
+            tab_derecha=tab_derecha,
+            tab_alto=tab_alto,
+            tab_chaflan=tab_chaflan,
+        )
+    else:
+        resultado_encastre = dict(
+            off_encastre=slot_off,
+            solapa_trasera_l=Lb,
+            solapa_frontal_l=Lb,
+            solapa_lateral_l=Wb,
+            tab_trasera=tab_w,
+            tab_frontal=tab_w,
+            tab_izquierda=tab_w,
+            tab_derecha=tab_w,
+            tab_alto=tab_l,
+            tab_chaflan=3.0,
+        )
+
     ancho_total = 2 * (Hs + Hw) + Lb
     alto_total = tab_l + 2 * (Hs + Hw) + Wb
+    if e.encastre:
+        shift = resultado_encastre["tab_alto"]
+        ancho_total = 2 * shift + 2 * (Hs + Hw) + Lb
+        alto_total = 2 * shift + 2 * (Hs + Hw) + Wb
     caben = (ancho_total <= HOJA_MAX[0] and alto_total <= HOJA_MAX[1]) or \
             (ancho_total <= HOJA_MAX[1] and alto_total <= HOJA_MAX[0])
     if not caben:
         adv.append(f"El troquel ({ancho_total:.0f}×{alto_total:.0f} mm) no cabe en la hoja "
                    f"{HOJA_MAX[0]:.0f}×{HOJA_MAX[1]:.0f} mm.")
-    return Resultado(e, frag, flauta[0], t, g, d, Lb, Wb, Hw, Hs, tab_w, tab_l,
-                     slot_off, ancho_total, alto_total, adv)
+    resultado = Resultado(e, frag, flauta[0], t, g, d, Lb, Wb, Hw, Hs, tab_w, tab_l,
+                          slot_off, ancho_total, alto_total, adv, e.encastre)
+    resultado.encastre_datos = resultado_encastre
+    return resultado
 
 
 # ------------------------------------------------------------- geometría ----
 def geometria(r: Resultado):
     """Coordenadas en mm. Origen (0,0) = esquina superior izquierda de la hoja
     (incluye la lengüeta). Eje Y hacia abajo."""
+    if r.encastre:
+        d = r.encastre_datos
+        tab_l = d["tab_alto"]
+        chaflan = d["tab_chaflan"]
+        tab_t = d["tab_trasera"]
+        tab_f = d["tab_frontal"]
+        tab_i = d["tab_izquierda"]
+        tab_derecha = d["tab_derecha"]
+        flap_t = d["solapa_trasera_l"]
+        flap_f = d["solapa_frontal_l"]
+        flap_l = d["solapa_lateral_l"]
+        flap_r = flap_l
+        off = d["off_encastre"]
+
+        x0 = 0.0
+        xShift = tab_l
+        xB0 = xShift + r.Hs + r.Hw
+        xB1 = xB0 + r.Lb
+        xF = xB1 + r.Hw + r.Hs
+        yT = tab_l
+        ySw = yT + r.Hs
+        yB0 = ySw + r.Hw
+        yB1 = yB0 + r.Wb
+        yFw = yB1 + r.Hw
+        yEnd = yFw + r.Hs
+
+        back_left = xB0 + (r.Lb - flap_t) / 2
+        back_right = back_left + flap_t
+        back_cx = (back_left + back_right) / 2
+        front_left = xB0 + (r.Lb - flap_f) / 2
+        front_right = front_left + flap_f
+        front_cx = (front_left + front_right) / 2
+        left_top = yB0 + (r.Wb - flap_l) / 2
+        left_bottom = left_top + flap_l
+        left_cy = (left_top + left_bottom) / 2
+        right_top = yB0 + (r.Wb - flap_r) / 2
+        right_bottom = right_top + flap_r
+        right_cy = (right_top + right_bottom) / 2
+
+        contorno = [
+            (back_left, yT),
+            (back_cx - tab_t / 2, yT),
+            (back_cx - tab_t / 2 + chaflan, 0.0),
+            (back_cx + tab_t / 2 - chaflan, 0.0),
+            (back_cx + tab_t / 2, yT),
+            (back_right, yT),
+            (back_right, ySw),
+            (xB1, ySw),
+            (xB1, yB0),
+            (xF, yB0),
+            (xF, right_top),
+            (xF + tab_l, right_cy - tab_derecha / 2 + chaflan),
+            (xF + tab_l, right_cy + tab_derecha / 2 - chaflan),
+            (xF, right_bottom),
+            (xF, yB1),
+            (xB1, yB1),
+            (xB1, yFw),
+            (xB1, yEnd),
+            (front_right, yEnd),
+            (front_cx + tab_f / 2, yEnd),
+            (front_cx + tab_f / 2 - chaflan, yEnd + tab_l),
+            (front_cx - tab_f / 2 + chaflan, yEnd + tab_l),
+            (front_cx - tab_f / 2, yEnd),
+            (front_left, yEnd),
+            (front_left, yFw),
+            (xB0, yFw),
+            (xB0, yB1),
+            (xShift + r.Hs, yB1),
+            (xShift + r.Hs, left_bottom),
+            (0.0, left_cy + tab_i / 2 - chaflan),
+            (0.0, left_cy - tab_i / 2 + chaflan),
+            (xShift + r.Hs, left_top),
+            (xShift + r.Hs, yB0),
+            (xB0, yB0),
+            (xB0, ySw),
+            (back_left, ySw),
+        ]
+
+        pliegues = [
+            ((back_cx - tab_t / 2, yT), (back_cx + tab_t / 2, yT)),
+            ((back_left, ySw), (back_right, ySw)),
+            ((xB0, ySw), (xB1, ySw)),
+            ((xB0, yB0), (xB1, yB0)),
+            ((xB0, yB1), (xB1, yB1)),
+            ((front_left, yFw), (front_right, yFw)),
+            ((front_left, yEnd), (front_right, yEnd)),
+            ((front_cx - tab_f / 2, yEnd), (front_cx + tab_f / 2, yEnd)),
+            ((xShift + r.Hs, yB0), (xShift + r.Hs, yB1)),
+            ((xB0, yB0), (xB0, yB1)),
+            ((xB1, yB0), (xB1, yB1)),
+            ((xF, yB0), (xF, yB1)),
+            ((xShift + r.Hs - tab_l, left_top), (xShift + r.Hs - tab_l, left_bottom)),
+            ((xF, right_top), (xF, right_bottom)),
+        ]
+
+        ranuras = [
+            {"id": "R1", "orientacion": "horizontal",
+             "p1": (back_cx - (tab_t + 1) / 2, yB0 + off),
+             "p2": (back_cx + (tab_t + 1) / 2, yB0 + off),
+             "lengüeta": "L1", "ancho": tab_t + 1},
+            {"id": "R2", "orientacion": "vertical",
+             "p1": (xB0 - off, left_cy - (tab_i + 1) / 2),
+             "p2": (xB0 - off, left_cy + (tab_i + 1) / 2),
+             "lengüeta": "L2", "ancho": tab_i + 1},
+            {"id": "R3", "orientacion": "horizontal",
+             "p1": (front_cx - (tab_f + 1) / 2, yB1 - off),
+             "p2": (front_cx + (tab_f + 1) / 2, yB1 - off),
+             "lengüeta": "L3", "ancho": tab_f + 1},
+            {"id": "R4", "orientacion": "vertical",
+             "p1": (xB1 + off, right_cy - (tab_derecha + 1) / 2),
+             "p2": (xB1 + off, right_cy + (tab_derecha + 1) / 2),
+             "lengüeta": "L4", "ancho": tab_derecha + 1},
+        ]
+
+        return dict(
+            x0=x0, xB0=xB0, xB1=xB1, xF=xF, yT=yT, ySw=ySw, yB0=yB0, yB1=yB1,
+            yFw=yFw, yEnd=yEnd, cx=back_cx, contorno=contorno, pliegues=pliegues,
+            ranuras=ranuras, ranura=ranuras[0],
+            off_encastre=off, tab_l=tab_l, back_left=back_left, back_right=back_right,
+            back_cx=back_cx, front_left=front_left, front_right=front_right, front_cx=front_cx,
+            left_top=left_top, left_bottom=left_bottom, left_cy=left_cy,
+            right_top=right_top, right_bottom=right_bottom, right_cy=right_cy,
+            tabs={"L1": tab_t, "L2": tab_i, "L3": tab_f, "L4": tab_derecha},
+        )
+
     x0, xB0 = 0.0, r.Hs + r.Hw
     xB1 = xB0 + r.Lb
     xF = xB1 + r.Hw + r.Hs
@@ -207,6 +396,41 @@ def pasos(r: Resultado) -> list[str]:
              f"de la base; pared der. y solapa der. iguales a la derecha.")
     P.append(f"6) Brazos verticales: pared trasera {f(r.Lb)}×{f(r.Hw)} y solapa trasera {f(r.Lb)}×{f(r.Hs)} sobre la base; "
              f"pared frontal y solapa frontal iguales debajo.")
+    if r.encastre:
+        d = r.encastre_datos
+        P.append(f"7) SOLAPAS ACORTADAS: trasera/frontal = {f(d['solapa_trasera_l'])} mm de largo "
+                 f"(Lb − 2(t+d)), centradas sobre sus paredes; izquierda/derecha = "
+                 f"{f(d['solapa_lateral_l'])} mm (Wb − 2(2t+d)), centradas sobre sus paredes.")
+        P.append(f"8) LENGÜETAS: L1 sobre trasera: ancho {f(d['tab_trasera'])} mm; "
+                 f"L2 sobre izquierda: ancho {f(d['tab_izquierda'])} mm; "
+                 f"L3 sobre frontal: ancho {f(d['tab_frontal'])} mm; "
+                 f"L4 sobre derecha: ancho {f(d['tab_derecha'])} mm. Alto común 15 mm, chaflán 3 mm.")
+        P.append(f"9) CORTE DE ORIGEN: desplaza X = {f(d['tab_alto'])} mm y Y = {f(d['tab_alto'])} mm "
+                 "para que todas las lengüetas queden dentro del lienzo.")
+        for ranura in g["ranuras"]:
+            p1, p2 = ranura["p1"], ranura["p2"]
+            P.append(f"10) RANURA {ranura['id']} ↔ {ranura['lengüeta']}: "
+                     f"de ({f(p1[0])}, {f(p1[1])}) a ({f(p2[0])}, {f(p2[1])}) mm; "
+                     f"largo {f(ranura['ancho'])} mm, corte continuo.")
+        P.append(f"11) DISTANCIA CALIBRABLE DE RANURA: t+d+t/2 = "
+                 f"{r.t:.1f}+{r.d:.1f}+{r.t/2:.1f} = {f(d['off_encastre'])} mm "
+                 "desde el pliegue correspondiente.")
+        P.append("12) LÍNEAS DE CORTE: recorre una sola vez el contorno cerrado; "
+                 "incluye las cuatro lengüetas como parte del polígono.")
+        P.append("13) LÍNEAS DE PLIEGUE: sólo hundir, nunca cortar:")
+        for (a, b) in g["pliegues"]:
+            P.append(f"     de ({f(a[0])}, {f(a[1])}) a ({f(b[0])}, {f(b[1])})")
+        P.append("14) PANAL: usa tiras recalculadas sin ocupar las esquinas ni orejas; "
+                 "trasera/frontal = Lb−2t−2·ancho_oreja y lateral = Wb−2t−2d.")
+        P.append("15) ARMADO PREVIO AL ENCASTRE: 1) levanta las 4 paredes; "
+                 "2) dobla las orejas hacia adentro; 3) inserta el panal; "
+                 "4) dobla las solapas sobre orejas y panal; "
+                 "5) encastra L1↔R1, L2↔R2, L3↔R3 y L4↔R4.")
+        P.append("16) CALIDAD: tolerancia de corte ±1 mm; prueba de caída a 1 m sobre 6 caras y esquinas.")
+        for advertencia in r.advertencias:
+            P.append(f"ADVERTENCIA: {advertencia}")
+        return P
+
     P.append(f"7) Lengüeta de cierre sobre la solapa trasera, centrada en X = {f(g['cx'])}: base {f(r.tab_w)} mm, "
              f"alto {f(r.tab_l)} mm, con chaflán de 3 mm por lado.")
     P.append(f"8) RANURA de encastre (corte) en la base: de ({f(g['ranura'][0][0])}, {f(g['slot_y'])}) "
@@ -264,8 +488,27 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
                    f'stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>')
     # corte
     out.append(f'<polygon points="{pts}" fill="none" stroke="#222" stroke-width="1.8" stroke-linejoin="round"/>')
-    a, b = tr(g["ranura"][0]), tr(g["ranura"][1])
-    out.append(f'<line x1="{a[0]:.2f}" y1="{a[1]:.2f}" x2="{b[0]:.2f}" y2="{b[1]:.2f}" stroke="#222" stroke-width="2.4"/>')
+    if r.encastre:
+        for ranura in g["ranuras"]:
+            a, b = tr(ranura["p1"]), tr(ranura["p2"])
+            out.append(f'<line x1="{a[0]:.2f}" y1="{a[1]:.2f}" x2="{b[0]:.2f}" y2="{b[1]:.2f}" '
+                       f'stroke="#1f6f8b" stroke-width="3.0"/>')
+            px, py = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+            out.append(f'<text x="{px:.1f}" y="{py-4:.1f}" font-size="9" text-anchor="middle" '
+                       f'fill="#1f6f8b" font-weight="bold">{ranura["lengüeta"]}↔{ranura["id"]}</text>')
+        for label, cx, cy in (
+            ("L1", g["back_cx"], g["yT"] - r.encastre_datos["tab_alto"] / 2),
+            ("L2", r.encastre_datos["tab_alto"] / 2, g["left_cy"]),
+            ("L3", g["front_cx"], g["yEnd"] + r.encastre_datos["tab_alto"] / 2),
+            ("L4", g["xF"] + r.encastre_datos["tab_alto"] / 2, g["right_cy"]),
+        ):
+            p = tr((cx, cy))
+            out.append(f'<circle cx="{p[0]:.1f}" cy="{p[1]:.1f}" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/>'
+                       f'<text x="{p[0]:.1f}" y="{p[1]+3:.1f}" font-size="9" text-anchor="middle" '
+                       f'fill="#1f6f8b" font-weight="bold">{label}</text>')
+    else:
+        a, b = tr(g["ranura"][0]), tr(g["ranura"][1])
+        out.append(f'<line x1="{a[0]:.2f}" y1="{a[1]:.2f}" x2="{b[0]:.2f}" y2="{b[1]:.2f}" stroke="#222" stroke-width="2.4"/>')
 
     # cotas
     def cota_h(xa, xb, y, txt):
