@@ -190,11 +190,6 @@
         const resultado = await response.json();
         svg = resultado.svg;
         preview.innerHTML = svg;
-        steps.replaceChildren(...resultado.pasos.map(paso => {
-          const item = document.createElement("li");
-          item.textContent = paso;
-          return item;
-        }));
         download.disabled = false;
         downloadPng.disabled = false;
         downloadPdf.disabled = false;

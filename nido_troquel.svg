@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1412.0 1144.0" width="2824" height="2288" font-family="Arial, sans-serif">
+<defs><marker id="ar" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 z" fill="#c0392b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="35.0" y="24" font-size="14" font-weight="bold">NIDO · plano de fabricación · 48×50×80 mm (vidrio / cristal · flauta E)</text>
+<rect x="651.0" y="516.0" width="100.0" height="102.0" fill="#ebd5a4" stroke="#ffffff" stroke-width="0.5"/>
+<text x="701.0" y="564.0" font-size="9" text-anchor="middle"><tspan font-weight="bold">BASE</tspan><tspan x="701.0" dy="12">100 × 102</tspan></text>
+<rect x="651.0" y="384.0" width="100.0" height="132.0" fill="#f2e4c4" stroke="#ffffff" stroke-width="0.5"/>
+<text x="701.0" y="447.0" font-size="9" text-anchor="middle"><tspan font-weight="bold">pared trasera</tspan><tspan x="701.0" dy="12">100 × 132</tspan></text>
+<rect x="651.0" y="618.0" width="100.0" height="132.0" fill="#f2e4c4" stroke="#ffffff" stroke-width="0.5"/>
+<text x="701.0" y="681.0" font-size="9" text-anchor="middle"><tspan font-weight="bold">pared frontal</tspan><tspan x="701.0" dy="12">100 × 132</tspan></text>
+<rect x="519.0" y="516.0" width="132.0" height="102.0" fill="#f2e4c4" stroke="#ffffff" stroke-width="0.5"/>
+<text x="585.0" y="564.0" font-size="9" text-anchor="middle" transform="rotate(-90 585.0 567.0)"><tspan font-weight="bold">pared izquierda</tspan><tspan x="585.0" dy="12">132 × 102</tspan></text>
+<rect x="751.0" y="516.0" width="132.0" height="102.0" fill="#f2e4c4" stroke="#ffffff" stroke-width="0.5"/>
+<text x="817.0" y="564.0" font-size="9" text-anchor="middle" transform="rotate(-90 817.0 567.0)"><tspan font-weight="bold">pared derecha</tspan><tspan x="817.0" dy="12">132 × 102</tspan></text>
+<rect x="667.5" y="255.0" width="67.0" height="129.0" fill="#f8eed8" stroke="#ffffff" stroke-width="0.5"/>
+<text x="701.0" y="316.5" font-size="9" text-anchor="middle"><tspan font-weight="bold">solapa trasera</tspan><tspan x="701.0" dy="12">67 × 129</tspan></text>
+<rect x="667.5" y="750.0" width="67.0" height="129.0" fill="#f8eed8" stroke="#ffffff" stroke-width="0.5"/>
+<text x="701.0" y="811.5" font-size="9" text-anchor="middle"><tspan font-weight="bold">solapa frontal</tspan><tspan x="701.0" dy="12">67 × 129</tspan></text>
+<rect x="390.0" y="534.0" width="129.0" height="66.0" fill="#f8eed8" stroke="#ffffff" stroke-width="0.5"/>
+<text x="454.5" y="564.0" font-size="9" text-anchor="middle" transform="rotate(-90 454.5 567.0)"><tspan font-weight="bold">solapa izquierda</tspan><tspan x="454.5" dy="12">129 × 66</tspan></text>
+<rect x="883.0" y="534.0" width="129.0" height="66.0" fill="#f8eed8" stroke="#ffffff" stroke-width="0.5"/>
+<text x="947.5" y="564.0" font-size="9" text-anchor="middle" transform="rotate(-90 947.5 567.0)"><tspan font-weight="bold">solapa derecha</tspan><tspan x="947.5" dy="12">129 × 66</tspan></text>
+<polygon points="667.5,255.0 686.0,255.0 689.0,240.0 713.0,240.0 716.0,255.0 734.5,255.0 734.5,384.0 751.0,384.0 751.0,516.0 883.0,516.0 1012.0,516.0 1012.0,534.0 1027.0,552.0 1027.0,555.0 1027.0,579.0 1027.0,582.0 1012.0,600.0 1012.0,618.0 883.0,618.0 751.0,618.0 751.0,750.0 734.5,750.0 734.5,879.0 716.0,879.0 713.0,894.0 689.0,894.0 686.0,879.0 667.5,879.0 667.5,750.0 651.0,750.0 651.0,618.0 519.0,618.0 390.0,618.0 390.0,600.0 375.0,582.0 375.0,579.0 375.0,555.0 375.0,552.0 390.0,534.0 390.0,516.0 519.0,516.0 651.0,516.0 651.0,384.0 667.5,384.0" fill="none" stroke="#222" stroke-width="1.8" stroke-linejoin="round"/>
+<line x1="686.0" y1="255.0" x2="716.0" y2="255.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="667.5" y1="384.0" x2="734.5" y2="384.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="651.0" y1="384.0" x2="751.0" y2="384.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="651.0" y1="516.0" x2="751.0" y2="516.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="651.0" y1="618.0" x2="751.0" y2="618.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="667.5" y1="750.0" x2="734.5" y2="750.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="667.5" y1="879.0" x2="734.5" y2="879.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="686.0" y1="879.0" x2="716.0" y2="879.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="651.0" y1="516.0" x2="651.0" y2="618.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="751.0" y1="516.0" x2="751.0" y2="618.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="519.0" y1="516.0" x2="519.0" y2="618.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="883.0" y1="516.0" x2="883.0" y2="618.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="390.0" y1="534.0" x2="390.0" y2="600.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="1012.0" y1="534.0" x2="1012.0" y2="600.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>
+<line x1="685.5" y1="533.2" x2="716.5" y2="533.2" stroke="#1f6f8b" stroke-width="3"/>
+<line x1="668.2" y1="551.5" x2="668.2" y2="582.5" stroke="#1f6f8b" stroke-width="3"/>
+<line x1="685.5" y1="600.8" x2="716.5" y2="600.8" stroke="#1f6f8b" stroke-width="3"/>
+<line x1="733.8" y1="551.5" x2="733.8" y2="582.5" stroke="#1f6f8b" stroke-width="3"/>
+<circle cx="701.0" cy="516.0" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/><text x="701.0" y="519.0" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">1</text>
+<circle cx="701.0" cy="384.0" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/><text x="701.0" y="387.0" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">2</text>
+<circle cx="701.0" cy="255.0" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/><text x="701.0" y="258.0" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">3</text>
+<circle cx="701.0" cy="248.0" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/><text x="701.0" y="251.0" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">4</text>
+<circle cx="701.0" cy="618.0" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/><text x="701.0" y="621.0" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">5</text>
+<line x1="375.0" y1="959.0" x2="504.0" y2="959.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="439.5" y="955.0" font-size="9" text-anchor="middle" fill="#c0392b">129</text>
+<line x1="504.0" y1="949.0" x2="636.0" y2="949.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="570.0" y="945.0" font-size="9" text-anchor="middle" fill="#c0392b">132</text>
+<line x1="636.0" y1="959.0" x2="736.0" y2="959.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="686.0" y="955.0" font-size="9" text-anchor="middle" fill="#c0392b">100</text>
+<line x1="736.0" y1="949.0" x2="868.0" y2="949.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="802.0" y="945.0" font-size="9" text-anchor="middle" fill="#c0392b">132</text>
+<line x1="868.0" y1="959.0" x2="1027.0" y2="959.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="947.5" y="955.0" font-size="9" text-anchor="middle" fill="#c0392b">129</text>
+<line x1="375.0" y1="981.0" x2="1027.0" y2="981.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="701.0" y="978.0" font-size="9" text-anchor="middle" fill="#c0392b">652 total</text>
+<line x1="308.0" y1="240.0" x2="308.0" y2="255.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="304.0" y="247.5" font-size="9" fill="#c0392b" text-anchor="end" transform="rotate(-90 304.0 247.5)">15</text>
+<line x1="320.0" y1="255.0" x2="320.0" y2="384.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="316.0" y="319.5" font-size="9" fill="#c0392b" text-anchor="end" transform="rotate(-90 316.0 319.5)">129</text>
+<line x1="308.0" y1="384.0" x2="308.0" y2="516.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="304.0" y="450.0" font-size="9" fill="#c0392b" text-anchor="end" transform="rotate(-90 304.0 450.0)">132</text>
+<line x1="320.0" y1="516.0" x2="320.0" y2="618.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="316.0" y="567.0" font-size="9" fill="#c0392b" text-anchor="end" transform="rotate(-90 316.0 567.0)">102</text>
+<line x1="308.0" y1="618.0" x2="308.0" y2="750.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="304.0" y="684.0" font-size="9" fill="#c0392b" text-anchor="end" transform="rotate(-90 304.0 684.0)">132</text>
+<line x1="320.0" y1="750.0" x2="320.0" y2="894.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="316.0" y="822.0" font-size="9" fill="#c0392b" text-anchor="end" transform="rotate(-90 316.0 822.0)">129</text>
+<line x1="290.0" y1="240.0" x2="290.0" y2="894.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="286.0" y="567.0" font-size="9" fill="#c0392b" text-anchor="middle" transform="rotate(-90 286.0 567.0)">654 total</text>
+<rect x="35.0" y="70.0" width="270.0" height="155.0" rx="5" fill="#fbfbfb" stroke="#aab4aa"/><text x="47.0" y="88.0" font-size="11" font-weight="bold">DETALLE A · lengüeta</text><text x="47.0" y="112.0" font-size="9">base frontal = 30</text><text x="47.0" y="127.0" font-size="9">base lateral = 30</text><text x="47.0" y="142.0" font-size="9">punta, alto 15, chaflán 3 · centrada</text><text x="47.0" y="157.0" font-size="9">escotadura: trasera/frontal 16.5</text><text x="47.0" y="172.0" font-size="9">escotadura: laterales 18</text>
+<rect x="1107.0" y="70.0" width="270.0" height="155.0" rx="5" fill="#fbfbfb" stroke="#aab4aa"/><text x="1119.0" y="88.0" font-size="11" font-weight="bold">DETALLE B · ranura</text><text x="1119.0" y="112.0" font-size="9">largo frontal = 31</text><text x="1119.0" y="127.0" font-size="9">largo lateral = 31</text><text x="1119.0" y="142.0" font-size="9">distancia al pliegue = 17.25</text><text x="1119.0" y="157.0" font-size="9">centrada: distancias laterales iguales</text>
+<rect x="35.0" y="954.0" width="270.0" height="155.0" rx="5" fill="#fbfbfb" stroke="#aab4aa"/><text x="47.0" y="972.0" font-size="11" font-weight="bold">LEYENDA Y DATOS</text><text x="47.0" y="996.0" font-size="9">medidas en mm · ancho × alto tal como se ven</text><text x="47.0" y="1011.0" font-size="9">material: vidrio · flauta E · t 1.5</text><text x="47.0" y="1026.0" font-size="9">g 8 · panal d 15</text><text x="47.0" y="1041.0" font-size="9">hoja mínima: 652 × 654</text>
+<line x1="1227.0" y1="1084.0" x2="1327.0" y2="1084.0" stroke="#222" stroke-width="3"/><text x="1277.0" y="1078.0" font-size="9" text-anchor="middle">100 mm</text>
+</svg>

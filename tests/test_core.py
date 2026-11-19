@@ -1,4 +1,6 @@
 import pytest  # type: ignore[import-not-found]
+import re
+import html
 
 import nido_core as nc
 from config import cargar_configuracion
@@ -10,6 +12,96 @@ CONFIG = cargar_configuracion()
 @pytest.mark.parametrize(("valor", "unidad", "esperado"), [(25, "mm", 25), (2.5, "cm", 25)])
 def test_convierte_medidas_a_milimetros(valor, unidad, esperado):
     assert nc.convertir_a_mm(valor, unidad) == esperado
+
+
+@pytest.mark.parametrize(
+    ("valor", "esperado"),
+    [(100, "100"), (17.25, "17.25"), (17.2, "17.2"), (17.0, "17")],
+)
+def test_formato_mm_sin_ceros_sobrantes(valor, esperado):
+    assert nc.formato_mm(valor) == esperado
+
+
+def test_cota_valida_distancia_real_con_escala():
+    cota = nc.Cota(valor=25, p1=(0, 0), p2=(50, 0), escala=2)
+
+    nc.validar_cota(cota)
+    assert cota.texto_mm() == "25"
+
+
+def test_cota_rechaza_valor_incorrecto():
+    cota = nc.Cota(valor=24, p1=(0, 0), p2=(50, 0), escala=2)
+
+    with pytest.raises(ValueError, match="no coincide"):
+        nc.validar_cota(cota)
+
+
+def test_escotaduras_no_estan_intercambiadas():
+    resultado = nc.calcular(
+        nc.Entrada("vidrio / cristal", "vidrio", 48, 50, 80, 0.4, "E"),
+        CONFIG,
+    )
+
+    assert resultado.t == 1.5
+    assert resultado.d == 15
+    assert resultado.t + resultado.d == 16.5
+    assert 2 * resultado.t + resultado.d == 18
+    texto_svg = nc.svg(resultado)
+    assert "escotadura: trasera/frontal 16.5" in texto_svg
+    assert "escotadura: laterales 18" in texto_svg
+
+
+def test_tiras_panal_usan_tramos_enteros_distintos():
+    resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
+    tiras = nc.tiras_panal(resultado)
+
+    for tira in tiras:
+        largo = tira["largo"]
+        n = max(2, round(largo / tira["profundidad"]))
+        assert tira["n_tramos"] == n
+        assert tira["tramo"] == pytest.approx(largo / n)
+
+    assert tiras[0]["largo"] != tiras[1]["largo"] or tiras[0]["n_tramos"] != tiras[1]["n_tramos"]
+
+
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 80, 100),
+    (48, 50, 80),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_salida_principal_sin_texto_de_coordenadas(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    svg = nc.svg(resultado)
+    textos = " ".join(html.unescape(fragment)
+                      for fragment in re.findall(r">([^<>]+)<", svg))
+
+    assert not re.search(r"\(\s*\d+(?:\.\d*)?\s*,\s*\d+(?:\.\d*)?\s*\)", textos)
+    assert not re.search(r"\bX\s*=", textos, re.I)
+    assert not re.search(r"\bY\s*=", textos, re.I)
+    assert not re.search(r"\borigen\b", textos, re.I)
+
+
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 80, 100),
+    (48, 50, 80),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_paneles_completos_en_salida_svg(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    g = nc.geometria(resultado)
+    svg = nc.svg(resultado)
+
+    assert len(g["paneles"]) == 9
+    for nombre, p1, p2 in g["paneles"]:
+        ancho = abs(p2[0] - p1[0])
+        alto = abs(p2[1] - p1[1])
+        assert ancho > 0
+        assert alto > 0
+        assert nombre in svg
+        assert nc.formato_mm(ancho) in svg
+        assert nc.formato_mm(alto) in svg
 
 
 def entrada_valida(**cambios):
@@ -41,6 +133,35 @@ def test_permite_sobrescribir_holguras_y_flauta():
     assert resultado.d == 25
     assert resultado.flauta == "B"
     assert resultado.t == 3
+
+
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 80, 100),
+    (48, 50, 80),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_registro_cotas_coincide_con_geometria(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    g = nc.geometria(resultado)
+    cotas = [
+        nc.Cota(resultado.Lb, (g["xB0"], g["yB0"]), (g["xB1"], g["yB0"]), nivel=1),
+        nc.Cota(resultado.Wb, (g["xB0"], g["yB0"]), (g["xB0"], g["yB1"]), nivel=1),
+        nc.Cota(resultado.Hw, (g["xB0"], g["ySw"]), (g["xB0"], g["yB0"]), nivel=2),
+        nc.Cota(resultado.Hs, (g["xB0"], g["yT"]), (g["xB0"], g["ySw"]), nivel=2),
+    ]
+
+    for cota in cotas:
+        nc.validar_cota(cota)
+
+    detalle = nc.Cota(
+        valor=resultado.tab_w,
+        p1=(g["back_cx"] - resultado.tab_w, g["yT"]),
+        p2=(g["back_cx"] + resultado.tab_w, g["yT"]),
+        nivel=1,
+        escala=2,
+    )
+    nc.validar_cota(detalle)
 
 
 def test_ancho_total_es_la_suma_de_las_columnas():

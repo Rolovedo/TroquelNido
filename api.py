@@ -29,6 +29,7 @@ class TroquelRequest(BaseModel):
     d: float | None = None
     flauta: str | None = None
     encastre: bool = True
+    debug_coordenadas: bool = False
 
 
 def crear_entrada(request: TroquelRequest) -> nc.Entrada:
@@ -63,7 +64,7 @@ def troquel(request: TroquelRequest) -> dict:
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
-    return {
+    respuesta = {
         "medidas": {
             "fragilidad": resultado.fragilidad,
             "flauta": resultado.flauta,
@@ -78,6 +79,8 @@ def troquel(request: TroquelRequest) -> dict:
             "alto_total": resultado.alto_total,
             "advertencias": resultado.advertencias,
         },
-        "pasos": nc.pasos(resultado),
         "svg": nc.svg(resultado),
     }
+    if request.debug_coordenadas:
+        respuesta["pasos"] = nc.pasos(resultado)
+    return respuesta
