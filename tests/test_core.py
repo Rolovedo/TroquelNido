@@ -109,6 +109,63 @@ def test_encastre_lengüetas_tienen_ranuras_en_la_base(largo, ancho, alto):
                geometria["yB0"] <= min(y1, y2) <= max(y1, y2) <= geometria["yB1"]
 
 
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 95, 100),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_encastre_todas_las_ranuras_cae_en_la_base(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    g = nc.geometria(resultado)
+
+    for ranura in g["ranuras"]:
+        (x1, y1), (x2, y2) = ranura["p1"], ranura["p2"]
+        assert g["xB0"] <= x1 <= g["xB1"]
+        assert g["xB0"] <= x2 <= g["xB1"]
+        assert g["yB0"] <= y1 <= g["yB1"]
+        assert g["yB0"] <= y2 <= g["yB1"]
+
+
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 95, 100),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_encastre_simetria_izquierda_derecha(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    g = nc.geometria(resultado)
+    eje_x = (g["xB0"] + g["xB1"]) / 2
+    reflejado = {(2 * eje_x - x, y) for x, y in g["contorno"]}
+
+    assert reflejado == set(g["contorno"])
+    assert g["xParedIzq"] == pytest.approx(2 * eje_x - g["xParedDer"])
+    assert g["xSolapaIzq"] == pytest.approx(2 * eje_x - g["xSolapaDer"])
+    assert g["left_top"] == pytest.approx(g["right_top"])
+    assert g["left_bottom"] == pytest.approx(g["right_bottom"])
+
+
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 95, 100),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_encastre_rellenos_coinciden_con_paneles(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    g = nc.geometria(resultado)
+
+    assert len(g["paneles"]) == 9
+    nombres = {nombre for nombre, _, _ in g["paneles"]}
+    assert {"BASE", "pared izquierda", "pared derecha",
+            "solapa izquierda", "solapa derecha"} <= nombres
+
+    for nombre, p1, p2 in g["paneles"]:
+        x1, y1 = p1
+        x2, y2 = p2
+        assert x2 > x1 or y2 > y1
+        assert min(x1, x2) >= g["x0"] - 1e-9
+        assert max(x1, x2) <= g["xF"] + resultado.encastre_datos["tab_alto"] + 1e-9
+
+
 def test_valores_calculados_y_geometria_nunca_son_negativos():
     resultado = nc.calcular(entrada_valida(), CONFIG)
     geometria = nc.geometria(resultado)

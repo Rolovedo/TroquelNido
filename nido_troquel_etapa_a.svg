@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 944.0 899.0" width="1888" height="1798" font-family="Arial, sans-serif">
+<defs><marker id="ar" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 z" fill="#c0392b"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="60.0" y="22" font-size="14" font-weight="bold">NIDO · troquel para 120×95×100 mm (cerámica / taza, flauta E)</text>
+<rect x="376.00" y="366.00" width="172.00" height="147.00" fill="#ebd5a4"/>
+<text x="462.0" y="439.5" font-size="11.0" text-anchor="middle" fill="#333">BASE</text>
+<rect x="376.00" y="214.00" width="172.00" height="152.00" fill="#f2e4c4"/>
+<text x="462.0" y="290.0" font-size="11.0" text-anchor="middle" fill="#333">pared trasera</text>
+<rect x="376.00" y="513.00" width="172.00" height="152.00" fill="#f2e4c4"/>
+<text x="462.0" y="589.0" font-size="11.0" text-anchor="middle" fill="#333">pared frontal</text>
+<rect x="224.00" y="366.00" width="152.00" height="147.00" fill="#f2e4c4"/>
+<text x="300.0" y="439.5" font-size="11.0" text-anchor="middle" fill="#333" transform="rotate(-90 300.0 439.5)">pared izquierda</text>
+<rect x="548.00" y="366.00" width="152.00" height="147.00" fill="#f2e4c4"/>
+<text x="624.0" y="439.5" font-size="11.0" text-anchor="middle" fill="#333" transform="rotate(-90 624.0 439.5)">pared derecha</text>
+<rect x="392.50" y="65.00" width="139.00" height="149.00" fill="#f8eed8"/>
+<text x="462.0" y="139.5" font-size="11.0" text-anchor="middle" fill="#333">solapa trasera</text>
+<rect x="392.50" y="665.00" width="139.00" height="149.00" fill="#f8eed8"/>
+<text x="462.0" y="739.5" font-size="11.0" text-anchor="middle" fill="#333">solapa frontal</text>
+<rect x="75.00" y="384.00" width="149.00" height="111.00" fill="#f8eed8"/>
+<text x="149.5" y="439.5" font-size="11.0" text-anchor="middle" fill="#333" transform="rotate(-90 149.5 439.5)">solapa izquierda</text>
+<rect x="700.00" y="384.00" width="149.00" height="111.00" fill="#f8eed8"/>
+<text x="774.5" y="439.5" font-size="11.0" text-anchor="middle" fill="#333" transform="rotate(-90 774.5 439.5)">solapa derecha</text>
+<line x1="444.62" y1="65.00" x2="479.38" y2="65.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="392.50" y1="214.00" x2="531.50" y2="214.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="376.00" y1="214.00" x2="548.00" y2="214.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="376.00" y1="366.00" x2="548.00" y2="366.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="376.00" y1="513.00" x2="548.00" y2="513.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="392.50" y1="665.00" x2="531.50" y2="665.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="392.50" y1="814.00" x2="531.50" y2="814.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="444.62" y1="814.00" x2="479.38" y2="814.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="376.00" y1="366.00" x2="376.00" y2="513.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="548.00" y1="366.00" x2="548.00" y2="513.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="224.00" y1="366.00" x2="224.00" y2="513.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="700.00" y1="366.00" x2="700.00" y2="513.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="75.00" y1="384.00" x2="75.00" y2="495.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<line x1="849.00" y1="384.00" x2="849.00" y2="495.00" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/>
+<polygon points="392.50,65.00 444.62,65.00 447.62,50.00 476.38,50.00 479.38,65.00 531.50,65.00 531.50,214.00 548.00,214.00 548.00,366.00 700.00,366.00 849.00,366.00 849.00,384.00 864.00,424.50 864.00,427.50 864.00,451.50 864.00,454.50 849.00,495.00 849.00,513.00 700.00,513.00 548.00,513.00 548.00,665.00 531.50,665.00 531.50,814.00 479.38,814.00 476.38,829.00 447.62,829.00 444.62,814.00 392.50,814.00 392.50,665.00 376.00,665.00 376.00,513.00 224.00,513.00 75.00,513.00 75.00,495.00 60.00,454.50 60.00,451.50 60.00,427.50 60.00,424.50 75.00,384.00 75.00,366.00 224.00,366.00 376.00,366.00 376.00,214.00 392.50,214.00" fill="none" stroke="#222" stroke-width="1.8" stroke-linejoin="round"/>
+<line x1="444.12" y1="383.25" x2="479.88" y2="383.25" stroke="#1f6f8b" stroke-width="3.0"/>
+<text x="462.0" y="379.2" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">L1↔R1</text>
+<line x1="393.25" y1="424.00" x2="393.25" y2="455.00" stroke="#1f6f8b" stroke-width="3.0"/>
+<text x="393.2" y="435.5" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">L2↔R2</text>
+<line x1="444.12" y1="495.75" x2="479.88" y2="495.75" stroke="#1f6f8b" stroke-width="3.0"/>
+<text x="462.0" y="491.8" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">L3↔R3</text>
+<line x1="530.75" y1="424.00" x2="530.75" y2="455.00" stroke="#1f6f8b" stroke-width="3.0"/>
+<text x="530.8" y="435.5" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">L4↔R4</text>
+<circle cx="462.0" cy="57.5" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/><text x="462.0" y="60.5" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">L1</text>
+<circle cx="67.5" cy="439.5" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/><text x="67.5" y="442.5" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">L2</text>
+<circle cx="462.0" cy="821.5" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/><text x="462.0" y="824.5" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">L3</text>
+<circle cx="856.5" cy="439.5" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/><text x="856.5" y="442.5" font-size="9" text-anchor="middle" fill="#1f6f8b" font-weight="bold">L4</text>
+<line x1="376.0" y1="830.0" x2="548.0" y2="830.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="462.0" y="827.0" font-size="9" fill="#c0392b" text-anchor="middle">172.0</text>
+<line x1="60.0" y1="846.0" x2="849.0" y2="846.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="454.5" y="843.0" font-size="9" fill="#c0392b" text-anchor="middle">804.0</text>
+<line x1="46.0" y1="366.0" x2="46.0" y2="513.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="42.0" y="439.5" font-size="9" fill="#c0392b" text-anchor="end" transform="rotate(-90 42.0 439.5)" dy="0">147.0</text>
+<line x1="30.0" y1="50.0" x2="30.0" y2="814.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="26.0" y="432.0" font-size="9" fill="#c0392b" text-anchor="end" transform="rotate(-90 26.0 432.0)" dy="0">779.0</text>
+<line x1="209.0" y1="44.0" x2="376.0" y2="44.0" stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+<text x="292.5" y="41.0" font-size="9" fill="#c0392b" text-anchor="middle">Hw 152.0</text>
+<line x1="60.0" y1="883.0" x2="90.0" y2="883.0" stroke="#222" stroke-width="1.8"/><text x="96.0" y="886.0" font-size="9">corte</text><line x1="140.0" y1="883.0" x2="170.0" y2="883.0" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="6 4"/><text x="176.0" y="886.0" font-size="9">pliegue</text><text x="230.0" y="886.0" font-size="9" fill="#c0392b">cotas en mm · sin pegante, sin cinta, sin grapas</text>
+</svg>

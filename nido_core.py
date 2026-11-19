@@ -223,6 +223,10 @@ def geometria(r: Resultado):
         xB0 = xShift + r.Hs + r.Hw
         xB1 = xB0 + r.Lb
         xF = xB1 + r.Hw + r.Hs
+        xSolapaIzq = xShift
+        xParedIzq = xB0 - r.Hw
+        xParedDer = xB1 + r.Hw
+        xSolapaDer = xF
         yT = tab_l
         ySw = yT + r.Hs
         yB0 = ySw + r.Hw
@@ -253,15 +257,19 @@ def geometria(r: Resultado):
             (back_right, ySw),
             (xB1, ySw),
             (xB1, yB0),
-            (xF, yB0),
-            (xF, right_top),
-            (xF + tab_l, right_cy - tab_derecha / 2 + chaflan),
-            (xF + tab_l, right_cy + tab_derecha / 2 - chaflan),
-            (xF, right_bottom),
-            (xF, yB1),
+            (xParedDer, yB0),
+            (xSolapaDer, yB0),
+            (xSolapaDer, right_top),
+            (xSolapaDer + tab_l, right_cy - tab_derecha / 2),
+            (xSolapaDer + tab_l, right_cy - tab_derecha / 2 + chaflan),
+            (xSolapaDer + tab_l, right_cy + tab_derecha / 2 - chaflan),
+            (xSolapaDer + tab_l, right_cy + tab_derecha / 2),
+            (xSolapaDer, right_bottom),
+            (xSolapaDer, yB1),
+            (xParedDer, yB1),
             (xB1, yB1),
             (xB1, yFw),
-            (xB1, yEnd),
+            (front_right, yFw),
             (front_right, yEnd),
             (front_cx + tab_f / 2, yEnd),
             (front_cx + tab_f / 2 - chaflan, yEnd + tab_l),
@@ -271,12 +279,16 @@ def geometria(r: Resultado):
             (front_left, yFw),
             (xB0, yFw),
             (xB0, yB1),
-            (xShift + r.Hs, yB1),
-            (xShift + r.Hs, left_bottom),
-            (0.0, left_cy + tab_i / 2 - chaflan),
-            (0.0, left_cy - tab_i / 2 + chaflan),
-            (xShift + r.Hs, left_top),
-            (xShift + r.Hs, yB0),
+            (xParedIzq, yB1),
+            (xSolapaIzq, yB1),
+            (xSolapaIzq, left_bottom),
+            (xSolapaIzq - tab_l, left_cy + tab_i / 2),
+            (xSolapaIzq - tab_l, left_cy + tab_i / 2 - chaflan),
+            (xSolapaIzq - tab_l, left_cy - tab_i / 2 + chaflan),
+            (xSolapaIzq - tab_l, left_cy - tab_i / 2),
+            (xSolapaIzq, left_top),
+            (xSolapaIzq, yB0),
+            (xParedIzq, yB0),
             (xB0, yB0),
             (xB0, ySw),
             (back_left, ySw),
@@ -291,12 +303,12 @@ def geometria(r: Resultado):
             ((front_left, yFw), (front_right, yFw)),
             ((front_left, yEnd), (front_right, yEnd)),
             ((front_cx - tab_f / 2, yEnd), (front_cx + tab_f / 2, yEnd)),
-            ((xShift + r.Hs, yB0), (xShift + r.Hs, yB1)),
             ((xB0, yB0), (xB0, yB1)),
             ((xB1, yB0), (xB1, yB1)),
-            ((xF, yB0), (xF, yB1)),
-            ((xShift + r.Hs - tab_l, left_top), (xShift + r.Hs - tab_l, left_bottom)),
-            ((xF, right_top), (xF, right_bottom)),
+            ((xParedIzq, yB0), (xParedIzq, yB1)),
+            ((xParedDer, yB0), (xParedDer, yB1)),
+            ((xSolapaIzq, left_top), (xSolapaIzq, left_bottom)),
+            ((xSolapaDer, right_top), (xSolapaDer, right_bottom)),
         ]
 
         ranuras = [
@@ -305,17 +317,29 @@ def geometria(r: Resultado):
              "p2": (back_cx + (tab_t + 1) / 2, yB0 + off),
              "lengüeta": "L1", "ancho": tab_t + 1},
             {"id": "R2", "orientacion": "vertical",
-             "p1": (xB0 - off, left_cy - (tab_i + 1) / 2),
-             "p2": (xB0 - off, left_cy + (tab_i + 1) / 2),
+             "p1": (xB0 + off, left_cy - (tab_i + 1) / 2),
+             "p2": (xB0 + off, left_cy + (tab_i + 1) / 2),
              "lengüeta": "L2", "ancho": tab_i + 1},
             {"id": "R3", "orientacion": "horizontal",
              "p1": (front_cx - (tab_f + 1) / 2, yB1 - off),
              "p2": (front_cx + (tab_f + 1) / 2, yB1 - off),
              "lengüeta": "L3", "ancho": tab_f + 1},
             {"id": "R4", "orientacion": "vertical",
-             "p1": (xB1 + off, right_cy - (tab_derecha + 1) / 2),
-             "p2": (xB1 + off, right_cy + (tab_derecha + 1) / 2),
+             "p1": (xB1 - off, right_cy - (tab_derecha + 1) / 2),
+             "p2": (xB1 - off, right_cy + (tab_derecha + 1) / 2),
              "lengüeta": "L4", "ancho": tab_derecha + 1},
+        ]
+
+        paneles = [
+            ("BASE", (xB0, yB0), (xB1, yB1)),
+            ("pared trasera", (xB0, ySw), (xB1, yB0)),
+            ("pared frontal", (xB0, yB1), (xB1, yFw)),
+            ("pared izquierda", (xParedIzq, yB0), (xB0, yB1)),
+            ("pared derecha", (xB1, yB0), (xParedDer, yB1)),
+            ("solapa trasera", (back_left, yT), (back_right, ySw)),
+            ("solapa frontal", (front_left, yFw), (front_right, yEnd)),
+            ("solapa izquierda", (xSolapaIzq, left_top), (xParedIzq, left_bottom)),
+            ("solapa derecha", (xParedDer, right_top), (xSolapaDer, right_bottom)),
         ]
 
         return dict(
@@ -326,6 +350,9 @@ def geometria(r: Resultado):
             back_cx=back_cx, front_left=front_left, front_right=front_right, front_cx=front_cx,
             left_top=left_top, left_bottom=left_bottom, left_cy=left_cy,
             right_top=right_top, right_bottom=right_bottom, right_cy=right_cy,
+            xSolapaIzq=xSolapaIzq, xParedIzq=xParedIzq,
+            xParedDer=xParedDer, xSolapaDer=xSolapaDer,
+            paneles=paneles,
             tabs={"L1": tab_t, "L2": tab_i, "L3": tab_f, "L4": tab_derecha},
         )
 
@@ -472,15 +499,32 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         t = f'<text x="{cx:.1f}" y="{cy:.1f}" font-size="{size:.1f}" text-anchor="middle" fill="#333"'
         if rot: t += f' transform="rotate(-90 {cx:.1f} {cy:.1f})"'
         out.append(t + f'>{label}</text>')
-    rect(g['xB0'], g['yB0'], g['xB1'], g['yB1'], "#ebd5a4", "BASE")
-    rect(g['xB0'], g['ySw'], g['xB1'], g['yB0'], "#f2e4c4", "pared trasera")
-    rect(g['xB0'], g['yB1'], g['xB1'], g['yFw'], "#f2e4c4", "pared frontal")
-    rect(g['xB0'], g['yT'], g['xB1'], g['ySw'], "#f8eed8", "solapa int. (2ª pared)")
-    rect(g['xB0'], g['yFw'], g['xB1'], g['yEnd'], "#f8eed8", "solapa int. (2ª pared)")
-    rect(r.Hs, g['yB0'], g['xB0'], g['yB1'], "#f2e4c4", "pared izq.", True)
-    rect(g['xB1'], g['yB0'], g['xB1'] + r.Hw, g['yB1'], "#f2e4c4", "pared der.", True)
-    rect(0, g['yB0'], r.Hs, g['yB1'], "#f8eed8", "solapa int.", True)
-    rect(g['xB1'] + r.Hw, g['yB0'], g['xF'], g['yB1'], "#f8eed8", "solapa int.", True)
+    if r.encastre:
+        panel_colores = {
+            "BASE": "#ebd5a4",
+            "pared trasera": "#f2e4c4",
+            "pared frontal": "#f2e4c4",
+            "pared izquierda": "#f2e4c4",
+            "pared derecha": "#f2e4c4",
+            "solapa trasera": "#f8eed8",
+            "solapa frontal": "#f8eed8",
+            "solapa izquierda": "#f8eed8",
+            "solapa derecha": "#f8eed8",
+        }
+        for nombre, p1, p2 in g["paneles"]:
+            rot = "izquierda" in nombre or "derecha" in nombre
+            rect(p1[0], p1[1], p2[0], p2[1], panel_colores[nombre],
+                 nombre if "pared" not in nombre else nombre, rot)
+    else:
+        rect(g['xB0'], g['yB0'], g['xB1'], g['yB1'], "#ebd5a4", "BASE")
+        rect(g['xB0'], g['ySw'], g['xB1'], g['yB0'], "#f2e4c4", "pared trasera")
+        rect(g['xB0'], g['yB1'], g['xB1'], g['yFw'], "#f2e4c4", "pared frontal")
+        rect(g['xB0'], g['yT'], g['xB1'], g['ySw'], "#f8eed8", "solapa int. (2ª pared)")
+        rect(g['xB0'], g['yFw'], g['xB1'], g['yEnd'], "#f8eed8", "solapa int. (2ª pared)")
+        rect(r.Hs, g['yB0'], g['xB0'], g['yB1'], "#f2e4c4", "pared izq.", True)
+        rect(g['xB1'], g['yB0'], g['xB1'] + r.Hw, g['yB1'], "#f2e4c4", "pared der.", True)
+        rect(0, g['yB0'], r.Hs, g['yB1'], "#f8eed8", "solapa int.", True)
+        rect(g['xB1'] + r.Hw, g['yB0'], g['xF'], g['yB1'], "#f8eed8", "solapa int.", True)
     # pliegues
     for a, b in g["pliegues"]:
         a, b = tr(a), tr(b)
