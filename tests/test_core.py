@@ -164,6 +164,78 @@ def test_registro_cotas_coincide_con_geometria(largo, ancho, alto):
     nc.validar_cota(detalle)
 
 
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 80, 100),
+    (48, 50, 80),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_solapa_lateral_contorno_relleno_lengüeta(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    g = nc.geometria(resultado)
+    paneles = {nombre: (p1, p2) for nombre, p1, p2 in g["paneles"]}
+    largo_solapa = resultado.Wb - 2 * (2 * resultado.t + resultado.d)
+    for nombre in ("solapa izquierda", "solapa derecha"):
+        p1, p2 = paneles[nombre]
+        assert abs(p2[1] - p1[1]) == pytest.approx(largo_solapa)
+        assert p1 in g["contorno"] and p2 in g["contorno"]
+
+    for label, poligono, base in g["lengüetas"]:
+        xs = [p[0] for p in poligono]
+        ys = [p[1] for p in poligono]
+        medido = abs(max(xs)-min(xs)) if label in ("L1", "L3") else abs(max(ys)-min(ys))
+        assert medido == pytest.approx(base)
+
+
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 80, 100),
+    (48, 50, 80),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_cadenas_completas_incluyen_lengüetas(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    g = nc.geometria(resultado)
+    tab = r.encastre_datos["tab_alto"] if (r := resultado).encastre else r.tab_l
+
+    horizontal = [tab, r.Hs, r.Hw, r.Lb, r.Hw, r.Hs, tab]
+    vertical = [tab, r.Hs, r.Hw, r.Wb, r.Hw, r.Hs, tab]
+
+    assert sum(horizontal) == pytest.approx(g["cross_w"] if "cross_w" in g else
+                                             (max(p[0] for p in g["contorno"]) -
+                                              min(p[0] for p in g["contorno"])))
+    assert sum(vertical) == pytest.approx(max(p[1] for p in g["contorno"]) -
+                                          min(p[1] for p in g["contorno"]))
+
+
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 80, 100),
+    (48, 50, 80),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_circulos_orden_no_se_superponen(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    g = nc.geometria(resultado)
+    puntos = g["orden_puntos"]
+
+    for i, p1 in enumerate(puntos):
+        for p2 in puntos[i+1:]:
+            assert nc.distancia_puntos(p1, p2) >= 18
+
+
+def test_svg_no_muestra_cotas_antiguas():
+    resultado = nc.calcular(entrada_valida(largo=120, ancho=80, alto=100), CONFIG)
+    svg = nc.svg(resultado)
+
+    assert "764.0" not in svg
+    assert "804.0" not in svg
+    assert "172.0" not in svg or "L3" not in svg
+    assert "DETALLE A · lengüeta ampliada" in svg
+    assert "DETALLE B · ranura ampliada" in svg
+    assert "1 base · 2 paredes · 3 solapas · 4 lengüetas · 5 ranuras" in svg
+
+
 def test_ancho_total_es_la_suma_de_las_columnas():
     resultado = nc.calcular(entrada_valida(encastre=False), CONFIG)
     columnas = (

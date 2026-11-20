@@ -314,14 +314,14 @@ def geometria(r: Resultado):
             (xB1, ySw),
             (xB1, yB0),
             (xParedDer, yB0),
-            (xSolapaDer, yB0),
+            (xParedDer, right_top),
             (xSolapaDer, right_top),
             (xSolapaDer + tab_l, right_cy - tab_derecha / 2),
             (xSolapaDer + tab_l, right_cy - tab_derecha / 2 + chaflan),
             (xSolapaDer + tab_l, right_cy + tab_derecha / 2 - chaflan),
             (xSolapaDer + tab_l, right_cy + tab_derecha / 2),
             (xSolapaDer, right_bottom),
-            (xSolapaDer, yB1),
+            (xParedDer, right_bottom),
             (xParedDer, yB1),
             (xB1, yB1),
             (xB1, yFw),
@@ -336,14 +336,14 @@ def geometria(r: Resultado):
             (xB0, yFw),
             (xB0, yB1),
             (xParedIzq, yB1),
-            (xSolapaIzq, yB1),
+            (xParedIzq, left_bottom),
             (xSolapaIzq, left_bottom),
             (xSolapaIzq - tab_l, left_cy + tab_i / 2),
             (xSolapaIzq - tab_l, left_cy + tab_i / 2 - chaflan),
             (xSolapaIzq - tab_l, left_cy - tab_i / 2 + chaflan),
             (xSolapaIzq - tab_l, left_cy - tab_i / 2),
             (xSolapaIzq, left_top),
-            (xSolapaIzq, yB0),
+            (xParedIzq, left_top),
             (xParedIzq, yB0),
             (xB0, yB0),
             (xB0, ySw),
@@ -398,6 +398,23 @@ def geometria(r: Resultado):
             ("solapa derecha", (xParedDer, right_top), (xSolapaDer, right_bottom)),
         ]
 
+        lengüetas = [
+            ("L1", [(back_cx-tab_t/2, yT), (back_cx-tab_t/2+chaflan, 0),
+                    (back_cx+tab_t/2-chaflan, 0), (back_cx+tab_t/2, yT)], tab_t),
+            ("L2", [(xSolapaIzq, left_cy-tab_i/2),
+                    (xSolapaIzq-tab_l, left_cy-tab_i/2+chaflan),
+                    (xSolapaIzq-tab_l, left_cy+tab_i/2-chaflan),
+                    (xSolapaIzq, left_cy+tab_i/2)], tab_i),
+            ("L3", [(front_cx-tab_f/2, yEnd),
+                    (front_cx-tab_f/2+chaflan, yEnd+tab_l),
+                    (front_cx+tab_f/2-chaflan, yEnd+tab_l),
+                    (front_cx+tab_f/2, yEnd)], tab_f),
+            ("L4", [(xSolapaDer, right_cy-tab_derecha/2),
+                    (xSolapaDer+tab_l, right_cy-tab_derecha/2+chaflan),
+                    (xSolapaDer+tab_l, right_cy+tab_derecha/2-chaflan),
+                    (xSolapaDer, right_cy+tab_derecha/2)], tab_derecha),
+        ]
+
         return dict(
             x0=x0, xB0=xB0, xB1=xB1, xF=xF, yT=yT, ySw=ySw, yB0=yB0, yB1=yB1,
             yFw=yFw, yEnd=yEnd, cx=back_cx, contorno=contorno, pliegues=pliegues,
@@ -409,7 +426,15 @@ def geometria(r: Resultado):
             xSolapaIzq=xSolapaIzq, xParedIzq=xParedIzq,
             xParedDer=xParedDer, xSolapaDer=xSolapaDer,
             paneles=paneles,
+            lengüetas=lengüetas,
             tabs={"L1": tab_t, "L2": tab_i, "L3": tab_f, "L4": tab_derecha},
+            orden_puntos=[
+                ((xB0+xB1)/2, yB0+r.Wb/2),
+                (back_cx, ySw+r.Hw/2),
+                (xSolapaIzq+r.Hs/2, left_cy),
+                (back_cx, yT-tab_l/2),
+                (ranuras[0]["p1"][0], ranuras[0]["p1"][1]),
+            ],
         )
 
     x0, xB0 = 0.0, r.Hs + r.Hw
@@ -653,15 +678,17 @@ def svg_legacy(r: Resultado, escala: float = 1.0) -> str:
 
 def svg(r: Resultado, escala: float = 1.0) -> str:
     g = geometria(r)
-    detail_w, detail_h = 270.0, 155.0
+    detail_w, detail_h = 300.0, 180.0
     margin = 35.0
     ox = margin + detail_w + 70
     oy = margin + detail_h + 50
     tr = lambda p: (p[0] + ox, p[1] + oy)
-    cross_w = r.ancho_total
-    cross_h = r.alto_total
-    W = detail_w * 2 + cross_w + 220
-    H = detail_h * 2 + cross_h + 180
+    xs_reales = [p[0] for p in g["contorno"]]
+    ys_reales = [p[1] for p in g["contorno"]]
+    cross_w = max(xs_reales) - min(xs_reales)
+    cross_h = max(ys_reales) - min(ys_reales)
+    W = detail_w * 2 + cross_w + 260
+    H = detail_h * 2 + cross_h + 220
 
     out = [
         '<svg xmlns="http://www.w3.org/2000/svg" '
@@ -712,13 +739,35 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         out.append(f'<line x1="{aa[0]:.1f}" y1="{aa[1]:.1f}" x2="{bb[0]:.1f}" y2="{bb[1]:.1f}" '
                    'stroke="#1f6f8b" stroke-width="3"/>')
 
-    # Números del orden de trazado.
+    # Cotas directas sobre la cruz.
+    d = r.encastre_datos
+    top_y = tr((g["back_cx"], g["yT"]-12))[1]
+    tx1, tx2 = tr((g["back_left"], g["yT"]-12))[0], tr((g["back_right"], g["yT"]-12))[0]
+    out.append(f'<line x1="{tx1:.1f}" y1="{top_y:.1f}" x2="{tx2:.1f}" y2="{top_y:.1f}" '
+               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{(tx1+tx2)/2:.1f}" y="{top_y-4:.1f}" font-size="9" text-anchor="middle" fill="#c0392b">'
+               f'solapa {formato_mm(d["solapa_trasera_l"])} · escotadura: trasera/frontal {formato_mm(r.t+r.d)} por lado</text>')
+    lx = tr((g["xParedIzq"]-r.Hw/2, g["left_cy"]))[0]
+    ly1, ly2 = tr((g["xParedIzq"], g["left_top"]))[1], tr((g["xParedIzq"], g["left_bottom"]))[1]
+    out.append(f'<line x1="{lx:.1f}" y1="{ly1:.1f}" x2="{lx:.1f}" y2="{ly2:.1f}" '
+               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{lx-4:.1f}" y="{(ly1+ly2)/2:.1f}" font-size="9" fill="#c0392b" '
+               f'text-anchor="middle" transform="rotate(-90 {lx-4:.1f} {(ly1+ly2)/2:.1f})">'
+               f'solapa {formato_mm(d["solapa_lateral_l"])} · escotadura: laterales {formato_mm(2*r.t+r.d)} · lado opuesto: iguales</text>')
+    for ranura in g["ranuras"]:
+        aa, bb = tr(ranura["p1"]), tr(ranura["p2"])
+        px, py = (aa[0]+bb[0])/2, (aa[1]+bb[1])/2
+        out.append(f'<text x="{px:.1f}" y="{py-5:.1f}" font-size="8" text-anchor="middle" '
+                   f'fill="#1f6f8b">{ranura["id"]}: largo {formato_mm(ranura["ancho"])}, '
+                   f'a {formato_mm(d["off_encastre"])} del pliegue, centrada</text>')
+
+    # Números del orden de trazado, separados y junto a su elemento.
     for num, p in enumerate((
-        (g["back_cx"], g["yB0"]),
-        ((g["xB0"]+g["xB1"])/2, g["ySw"]),
-        (g["back_cx"], g["yT"]),
-        (g["back_cx"], g["yT"]-7),
-        (g["front_cx"], g["yB1"]),
+        ((g["xB0"]+g["xB1"])/2, g["yB0"]+r.Wb/2),       # 1 base
+        (g["back_cx"], g["ySw"]+r.Hw/2),                 # 2 paredes
+        (g["xSolapaIzq"]+r.Hs/2, g["left_cy"]),          # 3 solapas
+        (g["back_cx"], g["yT"]-r.encastre_datos["tab_alto"]/2), # 4 lengüetas
+        (g["ranuras"][0]["p1"][0], g["ranuras"][0]["p1"][1]), # 5 una ranura
     ), 1):
         cc = tr(p)
         out.append(f'<circle cx="{cc[0]:.1f}" cy="{cc[1]:.1f}" r="9" fill="#fff" '
@@ -737,25 +786,28 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
 
     # Cadenas horizontales.
     cy = oy + r.alto_total + 55
-    xs = [ox, ox+r.Hs, ox+r.Hs+r.Hw, ox+r.Hs+r.Hw+r.Lb,
-          ox+r.Hs+r.Hw+r.Lb+r.Hw, ox+r.ancho_total]
-    vals = [r.Hs, r.Hw, r.Lb, r.Hw, r.Hs]
+    xs_internal = [0, g["xSolapaIzq"], g["xParedIzq"], g["xB0"], g["xB1"],
+                   g["xParedDer"], g["xSolapaDer"], g["xSolapaDer"]+r.encastre_datos["tab_alto"]]
+    xs = [ox+x for x in xs_internal]
+    vals = [r.encastre_datos["tab_alto"], r.Hs, r.Hw, r.Lb, r.Hw, r.Hs,
+            r.encastre_datos["tab_alto"]]
     for i, val in enumerate(vals):
         y = cy + (10 if i % 2 == 0 else 0)
         out.append(f'<line x1="{xs[i]:.1f}" y1="{y:.1f}" x2="{xs[i+1]:.1f}" y2="{y:.1f}" '
                    'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>')
         out.append(f'<text x="{(xs[i]+xs[i+1])/2:.1f}" y="{y-4:.1f}" font-size="9" '
                    f'text-anchor="middle" fill="#c0392b">{formato_mm(val)}</text>')
-    out.append(f'<line x1="{ox:.1f}" y1="{cy+32:.1f}" x2="{ox+r.ancho_total:.1f}" y2="{cy+32:.1f}" '
+    out.append(f'<line x1="{ox:.1f}" y1="{cy+32:.1f}" x2="{ox+cross_w:.1f}" y2="{cy+32:.1f}" '
                'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>')
-    out.append(f'<text x="{ox+r.ancho_total/2:.1f}" y="{cy+29:.1f}" font-size="9" '
-               f'text-anchor="middle" fill="#c0392b">{formato_mm(r.ancho_total)} total</text>')
+    out.append(f'<text x="{ox+cross_w/2:.1f}" y="{cy+29:.1f}" font-size="9" '
+               f'text-anchor="middle" fill="#c0392b">{formato_mm(cross_w)} total</text>')
 
     # Cadena vertical.
     cx = ox - 55
-    ys = [oy, oy+r.tab_l, oy+r.tab_l+r.Hs, oy+r.tab_l+r.Hs+r.Hw,
-          oy+r.tab_l+r.Hs+r.Hw+r.Wb, oy+r.tab_l+r.Hs+r.Hw+r.Wb+r.Hw, oy+r.alto_total]
-    vals = [r.tab_l, r.Hs, r.Hw, r.Wb, r.Hw, r.Hs]
+    ys_internal = [0, g["yT"], g["ySw"], g["yB0"], g["yB1"], g["yFw"], g["yEnd"],
+                   g["yEnd"]+r.encastre_datos["tab_alto"]]
+    ys = [oy+y for y in ys_internal]
+    vals = [r.tab_l, r.Hs, r.Hw, r.Wb, r.Hw, r.Hs, r.tab_l]
     for i, val in enumerate(vals):
         x = cx-(12 if i % 2 == 0 else 0)
         out.append(f'<line x1="{x:.1f}" y1="{ys[i]:.1f}" x2="{x:.1f}" y2="{ys[i+1]:.1f}" '
@@ -763,29 +815,45 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         out.append(f'<text x="{x-4:.1f}" y="{(ys[i]+ys[i+1])/2:.1f}" font-size="9" fill="#c0392b" '
                    f'text-anchor="end" transform="rotate(-90 {x-4:.1f} {(ys[i]+ys[i+1])/2:.1f})">'
                    f'{formato_mm(val)}</text>')
-    out.append(f'<line x1="{cx-30:.1f}" y1="{oy:.1f}" x2="{cx-30:.1f}" y2="{oy+r.alto_total:.1f}" '
+    out.append(f'<line x1="{cx-30:.1f}" y1="{oy:.1f}" x2="{cx-30:.1f}" y2="{oy+cross_h:.1f}" '
                'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>')
-    out.append(f'<text x="{cx-34:.1f}" y="{oy+r.alto_total/2:.1f}" font-size="9" fill="#c0392b" '
-               f'text-anchor="middle" transform="rotate(-90 {cx-34:.1f} {oy+r.alto_total/2:.1f})">'
-               f'{formato_mm(r.alto_total)} total</text>')
+    out.append(f'<text x="{cx-34:.1f}" y="{oy+cross_h/2:.1f}" font-size="9" fill="#c0392b" '
+               f'text-anchor="middle" transform="rotate(-90 {cx-34:.1f} {oy+cross_h/2:.1f})">'
+               f'{formato_mm(cross_h)} total</text>')
 
     # Recuadros A y B fuera de la cruz.
     ax, ay = margin, margin+35
     bx = W-margin-detail_w
     by = margin+35
     out.append(f'<rect x="{ax:.1f}" y="{ay:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
-               f'<text x="{ax+12:.1f}" y="{ay+18:.1f}" font-size="11" font-weight="bold">DETALLE A · lengüeta</text>'
-               f'<text x="{ax+12:.1f}" y="{ay+42:.1f}" font-size="9">base frontal = {formato_mm(r.encastre_datos["tab_trasera"])}</text>'
-               f'<text x="{ax+12:.1f}" y="{ay+57:.1f}" font-size="9">base lateral = {formato_mm(r.encastre_datos["tab_izquierda"])}</text>'
-               f'<text x="{ax+12:.1f}" y="{ay+72:.1f}" font-size="9">punta, alto 15, chaflán 3 · centrada</text>'
-               f'<text x="{ax+12:.1f}" y="{ay+87:.1f}" font-size="9">escotadura: trasera/frontal {formato_mm(r.t+r.d)}</text>'
-               f'<text x="{ax+12:.1f}" y="{ay+102:.1f}" font-size="9">escotadura: laterales {formato_mm(2*r.t+r.d)}</text>')
+               f'<text x="{ax+12:.1f}" y="{ay+18:.1f}" font-size="11" font-weight="bold">DETALLE A · lengüeta ampliada</text>')
+    aw = r.encastre_datos["tab_trasera"]
+    lw = r.encastre_datos["tab_izquierda"]
+    punta = max(30.0, aw-2*3)
+    ax1 = ax+55
+    ax2 = ax1+aw
+    ay1 = ay+70
+    ay0 = ay1-15
+    out.append(f'<polygon points="{ax1:.1f},{ay1:.1f} {ax1+3:.1f},{ay0:.1f} '
+               f'{ax1+aw-3:.1f},{ay0:.1f} {ax2:.1f},{ay1:.1f}" fill="#f8eed8" stroke="#222" stroke-width="1"/>')
+    out.append(f'<line x1="{ax1:.1f}" y1="{ay1+10:.1f}" x2="{ax2:.1f}" y2="{ay1+10:.1f}" '
+               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{(ax1+ax2)/2:.1f}" y="{ay1+24:.1f}" font-size="9" text-anchor="middle" fill="#c0392b">'
+               f'base W={formato_mm(aw)}</text>')
+    out.append(f'<text x="{ax+12:.1f}" y="{ay+145:.1f}" font-size="9">'
+               f'alto 15 · punta {formato_mm(punta)} · chaflán 3 · lateral W={formato_mm(lw)} · centrada</text>')
+
     out.append(f'<rect x="{bx:.1f}" y="{by:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
-               f'<text x="{bx+12:.1f}" y="{by+18:.1f}" font-size="11" font-weight="bold">DETALLE B · ranura</text>'
-               f'<text x="{bx+12:.1f}" y="{by+42:.1f}" font-size="9">largo frontal = {formato_mm(r.encastre_datos["tab_frontal"]+1)}</text>'
-               f'<text x="{bx+12:.1f}" y="{by+57:.1f}" font-size="9">largo lateral = {formato_mm(r.encastre_datos["tab_izquierda"]+1)}</text>'
-               f'<text x="{bx+12:.1f}" y="{by+72:.1f}" font-size="9">distancia al pliegue = {formato_mm(r.encastre_datos["off_encastre"])}</text>'
-               f'<text x="{bx+12:.1f}" y="{by+87:.1f}" font-size="9">centrada: distancias laterales iguales</text>')
+               f'<text x="{bx+12:.1f}" y="{by+18:.1f}" font-size="11" font-weight="bold">DETALLE B · ranura ampliada</text>')
+    bx1 = bx+45
+    by1 = by+85
+    rf = r.encastre_datos["tab_frontal"]+1
+    rl = r.encastre_datos["tab_izquierda"]+1
+    out.append(f'<line x1="{bx1:.1f}" y1="{by1:.1f}" x2="{bx1+rf:.1f}" y2="{by1:.1f}" stroke="#1f6f8b" stroke-width="4"/>'
+               f'<text x="{bx1+rf/2:.1f}" y="{by1-8:.1f}" font-size="9" text-anchor="middle">frontal largo {formato_mm(rf)}</text>'
+               f'<line x1="{bx1:.1f}" y1="{by1+28:.1f}" x2="{bx1+rl:.1f}" y2="{by1+28:.1f}" stroke="#1f6f8b" stroke-width="4"/>'
+               f'<text x="{bx1+rl/2:.1f}" y="{by1+44:.1f}" font-size="9" text-anchor="middle">lateral largo {formato_mm(rl)} · centrada</text>'
+               f'<text x="{bx+12:.1f}" y="{by+145:.1f}" font-size="9">a {formato_mm(r.encastre_datos["off_encastre"])} del pliegue · distancias laterales iguales</text>')
 
     # Leyenda y datos fuera de la cruz.
     ley_x, ley_y = margin, H-detail_h-margin
@@ -794,7 +862,8 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
                f'<text x="{ley_x+12:.1f}" y="{ley_y+42:.1f}" font-size="9">medidas en mm · ancho × alto tal como se ven</text>'
                f'<text x="{ley_x+12:.1f}" y="{ley_y+57:.1f}" font-size="9">material: {r.entrada.material} · flauta {r.flauta} · t {formato_mm(r.t)}</text>'
                f'<text x="{ley_x+12:.1f}" y="{ley_y+72:.1f}" font-size="9">g {formato_mm(r.g)} · panal d {formato_mm(r.d)}</text>'
-               f'<text x="{ley_x+12:.1f}" y="{ley_y+87:.1f}" font-size="9">hoja mínima: {formato_mm(r.ancho_total)} × {formato_mm(r.alto_total)}</text>')
+               f'<text x="{ley_x+12:.1f}" y="{ley_y+87:.1f}" font-size="9">hoja mínima: {formato_mm(cross_w)} × {formato_mm(cross_h)}</text>'
+               f'<text x="{ley_x+12:.1f}" y="{ley_y+112:.1f}" font-size="9">1 base · 2 paredes · 3 solapas · 4 lengüetas · 5 ranuras</text>')
 
     scale_x = W-margin-150
     scale_y = ley_y+detail_h-25

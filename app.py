@@ -144,5 +144,9 @@ if __name__ == "__main__":
         if "--debug-coordenadas" in sys.argv:
             print("\nDepuración de coordenadas:")
             print("\n".join(nc.pasos(r)))
+    elif "--demo120" in sys.argv:
+        r = nc.calcular(nc.Entrada("vidrio / cristal", "vidrio", 120, 80, 100, 0.4), CONFIG)
+        guardar(r)
+        print("Troquel generado: 120×80×100 mm, vidrio.")
     else:
         consola()
