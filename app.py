@@ -37,24 +37,11 @@ def numero(txt, opcional=False):
             print("  Escribe un número.")
 
 
-def guardar(r):
+def guardar(r, debug=False):
     open("nido_troquel.svg", "w", encoding="utf-8").write(nc.svg(r))
-    open("nido_pasos.txt", "w", encoding="utf-8").write("\n".join(nc.pasos(r)))
     json.dump(nc.a_dict(r), open("nido_resultado.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    try:
-        import cairosvg
-        cairosvg.svg2png(bytestring=nc.svg(r).encode("utf-8"),
-                         write_to="nido_troquel.png",
-                         output_width=1888,
-                         output_height=1798)
-    except (ImportError, OSError):
-        try:
-            from svglib.svglib import svg2rlg
-            from reportlab.graphics import renderPM
-            dibujo = svg2rlg("nido_troquel.svg")
-            renderPM.drawToFile(dibujo, "nido_troquel.png", fmt="PNG", dpi=192)
-        except Exception:
-            pass
+    if debug:
+        open("nido_pasos.txt", "w", encoding="utf-8").write("\n".join(nc.pasos(r)))
 
 
 def consola():
@@ -65,7 +52,7 @@ def consola():
     L = numero("Largo (mm): "); A = numero("Ancho (mm): "); H = numero("Alto (mm): ")
     p = numero("Peso en kg (Enter si no lo sabes): ", opcional=True)
     r = nc.calcular(nc.Entrada(tipo, mat, L, A, H, p), CONFIG)
-    guardar(r)
+    guardar(r, "--debug-coordenadas" in sys.argv)
     print("Troquel generado. Instrucciones principales: nido_troquel.svg")
     if "--debug-coordenadas" in sys.argv:
         print("\nDepuración de coordenadas:")
@@ -139,14 +126,14 @@ if __name__ == "__main__":
         print("http://localhost:8000"); HTTPServer(("", 8000), H).serve_forever()
     elif "--demo" in sys.argv:
         r = nc.calcular(nc.Entrada("vidrio / cristal", "vidrio", 48, 50, 80, 0.4), CONFIG)
-        guardar(r)
+        guardar(r, "--debug-coordenadas" in sys.argv)
         print("Troquel generado: 48×50×80 mm, vidrio.")
         if "--debug-coordenadas" in sys.argv:
             print("\nDepuración de coordenadas:")
             print("\n".join(nc.pasos(r)))
     elif "--demo120" in sys.argv:
         r = nc.calcular(nc.Entrada("vidrio / cristal", "vidrio", 120, 80, 100, 0.4), CONFIG)
-        guardar(r)
+        guardar(r, "--debug-coordenadas" in sys.argv)
         print("Troquel generado: 120×80×100 mm, vidrio.")
     else:
         consola()

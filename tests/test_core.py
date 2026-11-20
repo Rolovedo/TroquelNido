@@ -47,8 +47,9 @@ def test_escotaduras_no_estan_intercambiadas():
     assert resultado.t + resultado.d == 16.5
     assert 2 * resultado.t + resultado.d == 18
     texto_svg = nc.svg(resultado)
-    assert "escotadura: trasera/frontal 16.5" in texto_svg
-    assert "escotadura: laterales 18" in texto_svg
+    assert "escotadura: trasera/frontal" not in texto_svg
+    assert "escotadura: laterales" not in texto_svg
+    assert "lado opuesto: iguales" in texto_svg
 
 
 def test_tiras_panal_usan_tramos_enteros_distintos():
@@ -216,12 +217,46 @@ def test_cadenas_completas_incluyen_lengüetas(largo, ancho, alto):
 ])
 def test_circulos_orden_no_se_superponen(largo, ancho, alto):
     resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
-    g = nc.geometria(resultado)
-    puntos = g["orden_puntos"]
+    layout = nc.layout_salida(resultado)
+    puntos = []
+    for c in layout["circulos"]:
+        puntos.append(((c.x1+c.x2)/2, (c.y1+c.y2)/2))
 
     for i, p1 in enumerate(puntos):
         for p2 in puntos[i+1:]:
             assert nc.distancia_puntos(p1, p2) >= 18
+
+
+@pytest.mark.parametrize(("largo", "ancho", "alto"), [
+    (120, 80, 100),
+    (48, 50, 80),
+    (300, 250, 60),
+    (50, 50, 50),
+])
+def test_layout_no_superpone_circulos_textos_y_recuadros(largo, ancho, alto):
+    resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
+    layout = nc.layout_salida(resultado)
+
+    circulos = layout["circulos"]
+    for i, c1 in enumerate(circulos):
+        for c2 in circulos[i+1:]:
+            assert not c1.interseca(c2)
+        for texto in layout["texto_rects"]:
+            assert not c1.interseca(texto)
+
+    recuadros = list(layout["recuadros"].values())
+    for i, r1 in enumerate(recuadros):
+        for r2 in recuadros[i+1:]:
+            assert not r1.interseca(r2)
+        for cota in layout["cotas_rects"]:
+            assert not r1.interseca(cota)
+
+
+def test_app_no_generar_png():
+    app_text = open("app.py", "r", encoding="utf-8").read()
+    assert "cairosvg" not in app_text
+    assert "nido_troquel.png" not in app_text
+    assert "svg2png" not in app_text
 
 
 def test_svg_no_muestra_cotas_antiguas():
