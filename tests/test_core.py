@@ -268,7 +268,13 @@ def test_svg_no_muestra_cotas_antiguas():
     assert "172.0" not in svg or "L3" not in svg
     assert "DETALLE A · lengüeta ampliada" in svg
     assert "DETALLE B · ranura ampliada" in svg
-    assert "1 base · 2 paredes · 3 solapas · 4 lengüetas · 5 ranuras" in svg
+    assert "LEYENDA Y DATOS" in svg
+    assert "ORDEN DE TRAZADO" in svg
+    assert "DATOS" in svg
+    assert "Medidas en mm, ancho × alto tal como se ven." in svg
+    assert "Los pliegues coinciden con los bordes de cada panel." in svg
+    assert "Producto 120 × 80 × 100" in svg
+    assert "barra de escala = 100 mm" in svg
 
 
 def test_ancho_total_es_la_suma_de_las_columnas():

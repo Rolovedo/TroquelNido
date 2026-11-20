@@ -917,20 +917,43 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
 
     # Leyenda y datos fuera de la cruz.
     ley_x, ley_y = margin, H-detail_h-margin
-    out.append(f'<rect x="{ley_x:.1f}" y="{ley_y:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
-               f'<text x="{ley_x+12:.1f}" y="{ley_y+18:.1f}" font-size="11" font-weight="bold">LEYENDA Y DATOS</text>'
-               f'<text x="{ley_x+12:.1f}" y="{ley_y+42:.1f}" font-size="9">medidas en mm · ancho × alto tal como se ven</text>'
-               f'<text x="{ley_x+12:.1f}" y="{ley_y+57:.1f}" font-size="9">material: {r.entrada.material} · flauta {r.flauta} · t {formato_mm(r.t)}</text>'
-               f'<text x="{ley_x+12:.1f}" y="{ley_y+72:.1f}" font-size="9">g {formato_mm(r.g)} · panal d {formato_mm(r.d)}</text>'
-               f'<text x="{ley_x+12:.1f}" y="{ley_y+87:.1f}" font-size="9">hoja mínima: {formato_mm(cross_w)} × {formato_mm(cross_h)}</text>'
-               f'<text x="{ley_x+12:.1f}" y="{ley_y+112:.1f}" font-size="9">1 base · 2 paredes · 3 solapas · 4 lengüetas · 5 ranuras</text>'
-               f'<text x="{ley_x+12:.1f}" y="{ley_y+127:.1f}" font-size="9">lado opuesto: iguales</text>'
-               f'<line x1="{ley_x+12:.1f}" y1="{ley_y+145:.1f}" x2="{ley_x+55:.1f}" y2="{ley_y+145:.1f}" stroke="#222" stroke-width="2"/>'
-               f'<text x="{ley_x+62:.1f}" y="{ley_y+149:.1f}" font-size="9">corte</text>'
-               f'<line x1="{ley_x+105:.1f}" y1="{ley_y+145:.1f}" x2="{ley_x+148:.1f}" y2="{ley_y+145:.1f}" stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>'
-               f'<text x="{ley_x+155:.1f}" y="{ley_y+149:.1f}" font-size="9">pliegue</text>'
-               f'<line x1="{ley_x+210:.1f}" y1="{ley_y+145:.1f}" x2="{ley_x+253:.1f}" y2="{ley_y+145:.1f}" stroke="#1f6f8b" stroke-width="3"/>'
-               f'<text x="{ley_x+260:.1f}" y="{ley_y+149:.1f}" font-size="9">ranura</text>')
+    ley = [
+        f'<rect x="{ley_x:.1f}" y="{ley_y:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>',
+        f'<text x="{ley_x+12:.1f}" y="{ley_y+19:.1f}" font-size="12" font-weight="bold">LEYENDA Y DATOS</text>',
+        f'<line x1="{ley_x+12:.1f}" y1="{ley_y+40:.1f}" x2="{ley_x+55:.1f}" y2="{ley_y+40:.1f}" stroke="#222" stroke-width="2.5"/>',
+        f'<text x="{ley_x+62:.1f}" y="{ley_y+44:.1f}" font-size="9">corte</text>',
+        f'<line x1="{ley_x+105:.1f}" y1="{ley_y+40:.1f}" x2="{ley_x+148:.1f}" y2="{ley_y+40:.1f}" stroke="#2e7d4f" stroke-width="1.5" stroke-dasharray="7 4"/>',
+        f'<text x="{ley_x+155:.1f}" y="{ley_y+44:.1f}" font-size="9">pliegue</text>',
+        f'<line x1="{ley_x+205:.1f}" y1="{ley_y+40:.1f}" x2="{ley_x+248:.1f}" y2="{ley_y+40:.1f}" stroke="#1f6f8b" stroke-width="4"/>',
+        f'<text x="{ley_x+255:.1f}" y="{ley_y+44:.1f}" font-size="9">ranura</text>',
+        f'<text x="{ley_x+12:.1f}" y="{ley_y+60:.1f}" font-size="9">Medidas en mm, ancho × alto tal como se ven.</text>',
+        f'<text x="{ley_x+12:.1f}" y="{ley_y+74:.1f}" font-size="9">Los pliegues coinciden con los bordes de cada panel.</text>',
+        f'<text x="{ley_x+12:.1f}" y="{ley_y+94:.1f}" font-size="11" font-weight="bold">ORDEN DE TRAZADO</text>',
+        f'<text x="{ley_x+146:.1f}" y="{ley_y+94:.1f}" font-size="11" font-weight="bold">DATOS</text>',
+    ]
+    for num, nombre in enumerate(("Base", "4 paredes", "4 solapas", "4 lengüetas", "4 ranuras"), 1):
+        cy = ley_y + 112 + (num-1)*14
+        ley.append(f'<circle cx="{ley_x+16:.1f}" cy="{cy-3:.1f}" r="8" fill="#fff" stroke="#1f6f8b" stroke-width="1"/>')
+        ley.append(f'<text x="{ley_x+16:.1f}" y="{cy:.1f}" font-size="8" text-anchor="middle" fill="#1f6f8b" font-weight="bold">{num}</text>')
+        ley.append(f'<text x="{ley_x+29:.1f}" y="{cy:.1f}" font-size="9">{nombre}</text>')
+    datos = (
+        f'Producto {formato_mm(r.entrada.largo)} × {formato_mm(r.entrada.ancho)} × {formato_mm(r.entrada.alto)}',
+        f'Material: {r.entrada.material}',
+        f'Flauta {r.flauta} (t = {formato_mm(r.t)} mm)',
+        f'Holgura g = {formato_mm(r.g)}',
+        f'Panal d = {formato_mm(r.d)}',
+        f'Hoja mínima {formato_mm(cross_w)} × {formato_mm(cross_h)}',
+    )
+    for idx, dato in enumerate(datos):
+        ley.append(f'<text x="{ley_x+146:.1f}" y="{ley_y+112+idx*14:.1f}" font-size="9">{dato}</text>')
+    ley.extend([
+        f'<line x1="{ley_x+12:.1f}" y1="{ley_y+151:.1f}" x2="{ley_x+250:.1f}" y2="{ley_y+151:.1f}" stroke="#222" stroke-width="2"/>',
+        f'<line x1="{ley_x+12:.1f}" y1="{ley_y+147:.1f}" x2="{ley_x+12:.1f}" y2="{ley_y+155:.1f}" stroke="#222" stroke-width="2"/>',
+        f'<line x1="{ley_x+250:.1f}" y1="{ley_y+147:.1f}" x2="{ley_x+250:.1f}" y2="{ley_y+155:.1f}" stroke="#222" stroke-width="2"/>',
+        f'<text x="{ley_x+131:.1f}" y="{ley_y+164:.1f}" font-size="9" text-anchor="middle">barra de escala = 100 mm</text>',
+        f'<text x="{ley_x+12:.1f}" y="{ley_y+176:.1f}" font-size="8" fill="#9a9a9a">lado opuesto: iguales · IMAGEN DE REFERENCIA DE ESTILO</text>',
+    ])
+    out.append("\n".join(ley))
 
     pan_x, pan_y = W-margin-detail_w, H-detail_h-margin
     out.append(f'<rect x="{pan_x:.1f}" y="{pan_y:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
