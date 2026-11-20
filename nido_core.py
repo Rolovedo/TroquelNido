@@ -873,21 +873,61 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
     out.append(f'<rect x="{ax:.1f}" y="{ay:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
                f'<text x="{ax+12:.1f}" y="{ay+18:.1f}" font-size="11" font-weight="bold">DETALLE A · lengüeta ampliada</text>')
     aw = r.encastre_datos["tab_trasera"]
-    lw = r.encastre_datos["tab_izquierda"]
-    punta = max(30.0, aw-2*3)
-    awd = aw*4
-    ax1 = ax+(detail_w-awd)/2
-    ax2 = ax1+awd
-    ay1 = ay+125
-    ay0 = ay1-60
-    out.append(f'<polygon points="{ax1:.1f},{ay1:.1f} {ax1+3:.1f},{ay0:.1f} '
-               f'{ax1+aw-3:.1f},{ay0:.1f} {ax2:.1f},{ay1:.1f}" fill="#f8eed8" stroke="#222" stroke-width="1"/>')
-    out.append(f'<line x1="{ax1:.1f}" y1="{ay1+10:.1f}" x2="{ax2:.1f}" y2="{ay1+10:.1f}" '
+    chaflan = r.encastre_datos["tab_chaflan"]
+    alto_tab = r.encastre_datos["tab_alto"]
+    punta = max(0.0, aw-2*chaflan)
+
+    # Vista ampliada proporcional a las medidas reales de la lengüeta.
+    escala_detalle = min(7.0, 210.0 / max(aw, alto_tab))
+    visual_base = aw*escala_detalle
+    visual_punta = punta*escala_detalle
+    visual_alto = alto_tab*escala_detalle
+    ax1 = ax+(detail_w-visual_base)/2
+    ax2 = ax1+visual_base
+    ay0 = ay+58
+    ay1 = ay0+visual_alto
+    px1 = (ax1+ax2-visual_punta)/2
+    px2 = px1+visual_punta
+
+    out.append(f'<polygon points="{ax1:.1f},{ay1:.1f} {px1:.1f},{ay0:.1f} '
+               f'{px2:.1f},{ay0:.1f} {ax2:.1f},{ay1:.1f}" fill="#f8eed8" stroke="#222" stroke-width="2"/>')
+
+    # Cota superior: punta superior (ancho entre los chaflanes).
+    cota_y = ay0-22
+    out.append(f'<line x1="{px1:.1f}" y1="{cota_y:.1f}" x2="{px2:.1f}" y2="{cota_y:.1f}" '
                'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
-               f'<text x="{(ax1+ax2)/2:.1f}" y="{ay1+24:.1f}" font-size="9" text-anchor="middle" fill="#c0392b">'
-               f'base W={formato_mm(aw)}</text>')
-    out.append(f'<text x="{ax+12:.1f}" y="{ay+145:.1f}" font-size="9">'
-               f'alto 15 · punta {formato_mm(punta)} · chaflán 3 · lateral W={formato_mm(lw)} · centrada</text>')
+               f'<text x="{(px1+px2)/2:.1f}" y="{cota_y-7:.1f}" font-size="10" '
+               f'text-anchor="middle" fill="#c0392b">{formato_mm(punta)}</text>')
+
+    # Cota izquierda corta para mostrar el chaflán de 3 mm.
+    if aw > 2*chaflan:
+        linea_chaflan_x1 = ax1
+        linea_chaflan_x2 = px1
+        linea_chaflan_y = ay0-4
+        out.append(f'<line x1="{linea_chaflan_x1:.1f}" y1="{linea_chaflan_y:.1f}" '
+                   f'x2="{linea_chaflan_x2:.1f}" y2="{linea_chaflan_y:.1f}" '
+                   'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+                   f'<text x="{(linea_chaflan_x1+linea_chaflan_x2)/2:.1f}" y="{linea_chaflan_y-7:.1f}" '
+                   f'font-size="9" text-anchor="middle" fill="#c0392b">{formato_mm(chaflan)}</text>')
+        out.append(f'<text x="{ax1-6:.1f}" y="{ay0+visual_alto/2:.1f}" font-size="9" '
+                   f'text-anchor="middle" fill="#c0392b">{formato_mm(chaflan)}</text>')
+
+    # Cota inferior: base real de la lengüeta.
+    base_y = ay1+24
+    out.append(f'<line x1="{ax1:.1f}" y1="{base_y:.1f}" x2="{ax2:.1f}" y2="{base_y:.1f}" '
+               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{(ax1+ax2)/2:.1f}" y="{base_y+15:.1f}" font-size="10" '
+               f'text-anchor="middle" fill="#c0392b">{formato_mm(aw)}</text>')
+
+    # Cota vertical y texto de centrado.
+    vertical_x = ax2+28
+    out.append(f'<line x1="{vertical_x:.1f}" y1="{ay0:.1f}" x2="{vertical_x:.1f}" y2="{ay1:.1f}" '
+               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{vertical_x+8:.1f}" y="{(ay0+ay1)/2:.1f}" font-size="10" '
+               f'text-anchor="middle" fill="#c0392b" '
+               f'transform="rotate(-90 {vertical_x+8:.1f} {(ay0+ay1)/2:.1f})">{formato_mm(alto_tab)}</text>'
+               f'<text x="{(ax1+ax2)/2:.1f}" y="{ay1-visual_alto/2:.1f}" font-size="10" '
+               f'text-anchor="middle" fill="#777">centrada</text>')
 
     out.append(f'<rect x="{bx:.1f}" y="{by:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
                f'<text x="{bx+12:.1f}" y="{by+18:.1f}" font-size="11" font-weight="bold">DETALLE B · ranura ampliada</text>')

@@ -278,6 +278,19 @@ def test_svg_no_muestra_cotas_antiguas():
     assert "Producto 120 × 80 × 100" in svg
 
 
+def test_detalle_a_muestra_lado_por_lado_de_la_lengüeta():
+    resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
+    svg = nc.svg(resultado)
+    datos = resultado.encastre_datos
+
+    punta = datos["tab_trasera"] - 2 * datos["tab_chaflan"]
+    assert "DETALLE A · lengüeta ampliada" in svg
+    assert f">{nc.formato_mm(punta)}</text>" in svg
+    assert f">{nc.formato_mm(datos['tab_trasera'])}</text>" in svg
+    assert f">{nc.formato_mm(datos['tab_alto'])}</text>" in svg
+    assert f">{nc.formato_mm(datos['tab_chaflan'])}</text>" in svg
+
+
 def test_ancho_total_es_la_suma_de_las_columnas():
     resultado = nc.calcular(entrada_valida(encastre=False), CONFIG)
     columnas = (
