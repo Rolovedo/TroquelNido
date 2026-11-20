@@ -508,7 +508,7 @@ def tiras_panal(r: Resultado):
 def layout_salida(r: Resultado) -> dict:
     """Cuadros de texto, círculos y recuadros calculados solo por datos."""
     g = geometria(r)
-    detail_w, detail_h = 300.0, 180.0
+    detail_w, detail_h = 300.0, 210.0
     margin = 35.0
     ox = margin + detail_w + 70
     oy = margin + detail_h + 50
@@ -537,7 +537,7 @@ def layout_salida(r: Resultado) -> dict:
         (ox+cross_w/2, oy-20),
         (ox-20, oy+cross_h/2),
     ]
-    circulos = [Rectangulo(p[0]-9, p[1]-9, p[0]+9, p[1]+9) for p in puntos]
+    circulos = []
 
     recuadros = {
         "A": Rectangulo(margin, margin+35, margin+detail_w, margin+35+detail_h),
@@ -746,7 +746,7 @@ def svg_legacy(r: Resultado, escala: float = 1.0) -> str:
 def svg(r: Resultado, escala: float = 1.0) -> str:
     g = geometria(r)
     salida = layout_salida(r)
-    detail_w, detail_h = 300.0, 180.0
+    detail_w, detail_h = 300.0, 210.0
     margin = 35.0
     ox, oy = salida["ox"], salida["oy"]
     tr = lambda p: (p[0] + ox, p[1] + oy)
@@ -820,20 +820,6 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
                f'<text x="{lx-4:.1f}" y="{(ly1+ly2)/2:.1f}" font-size="9" fill="#c0392b" '
                f'text-anchor="middle" transform="rotate(-90 {lx-4:.1f} {(ly1+ly2)/2:.1f})">'
                f'{formato_mm(2*r.t+r.d)}</text>')
-    # Números del orden de trazado, separados y junto a su elemento.
-    puntos_circulos = [
-        (ox+20, oy+20),
-        (ox+20, oy+45),
-        (ox+20, oy+cross_h-20),
-        (ox+cross_w/2, oy-20),
-        (ox-20, oy+cross_h/2),
-    ]
-    for num, cc in enumerate(puntos_circulos, 1):
-        out.append(f'<circle cx="{cc[0]:.1f}" cy="{cc[1]:.1f}" r="9" fill="#fff" '
-                   'stroke="#1f6f8b" stroke-width="1"/>'
-                   f'<text x="{cc[0]:.1f}" y="{cc[1]+3:.1f}" font-size="9" text-anchor="middle" '
-                   f'fill="#1f6f8b" font-weight="bold">{num}</text>')
-
     # Registro y dibujo de cotas.
     cotas: list[Cota] = []
     cotas.append(Cota(r.Lb, (g["xB0"], g["yB0"]), (g["xB1"], g["yB0"]), 1))
@@ -928,14 +914,8 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         f'<text x="{ley_x+255:.1f}" y="{ley_y+44:.1f}" font-size="9">ranura</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+60:.1f}" font-size="9">Medidas en mm, ancho × alto tal como se ven.</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+74:.1f}" font-size="9">Los pliegues coinciden con los bordes de cada panel.</text>',
-        f'<text x="{ley_x+12:.1f}" y="{ley_y+94:.1f}" font-size="11" font-weight="bold">ORDEN DE TRAZADO</text>',
-        f'<text x="{ley_x+146:.1f}" y="{ley_y+94:.1f}" font-size="11" font-weight="bold">DATOS</text>',
+        f'<text x="{ley_x+12:.1f}" y="{ley_y+94:.1f}" font-size="11" font-weight="bold">DATOS</text>',
     ]
-    for num, nombre in enumerate(("Base", "4 paredes", "4 solapas", "4 lengüetas", "4 ranuras"), 1):
-        cy = ley_y + 112 + (num-1)*14
-        ley.append(f'<circle cx="{ley_x+16:.1f}" cy="{cy-3:.1f}" r="8" fill="#fff" stroke="#1f6f8b" stroke-width="1"/>')
-        ley.append(f'<text x="{ley_x+16:.1f}" y="{cy:.1f}" font-size="8" text-anchor="middle" fill="#1f6f8b" font-weight="bold">{num}</text>')
-        ley.append(f'<text x="{ley_x+29:.1f}" y="{cy:.1f}" font-size="9">{nombre}</text>')
     datos = (
         f'Producto {formato_mm(r.entrada.largo)} × {formato_mm(r.entrada.ancho)} × {formato_mm(r.entrada.alto)}',
         f'Material: {r.entrada.material}',
@@ -945,38 +925,75 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         f'Hoja mínima {formato_mm(cross_w)} × {formato_mm(cross_h)}',
     )
     for idx, dato in enumerate(datos):
-        ley.append(f'<text x="{ley_x+146:.1f}" y="{ley_y+112+idx*14:.1f}" font-size="9">{dato}</text>')
-    ley.extend([
-        f'<line x1="{ley_x+12:.1f}" y1="{ley_y+151:.1f}" x2="{ley_x+250:.1f}" y2="{ley_y+151:.1f}" stroke="#222" stroke-width="2"/>',
-        f'<line x1="{ley_x+12:.1f}" y1="{ley_y+147:.1f}" x2="{ley_x+12:.1f}" y2="{ley_y+155:.1f}" stroke="#222" stroke-width="2"/>',
-        f'<line x1="{ley_x+250:.1f}" y1="{ley_y+147:.1f}" x2="{ley_x+250:.1f}" y2="{ley_y+155:.1f}" stroke="#222" stroke-width="2"/>',
-        f'<text x="{ley_x+131:.1f}" y="{ley_y+164:.1f}" font-size="9" text-anchor="middle">barra de escala = 100 mm</text>',
-        f'<text x="{ley_x+12:.1f}" y="{ley_y+176:.1f}" font-size="8" fill="#9a9a9a">lado opuesto: iguales · IMAGEN DE REFERENCIA DE ESTILO</text>',
-    ])
+        ley.append(f'<text x="{ley_x+12:.1f}" y="{ley_y+112+idx*12:.1f}" font-size="9">{dato}</text>')
     out.append("\n".join(ley))
 
     pan_x, pan_y = W-margin-detail_w, H-detail_h-margin
     out.append(f'<rect x="{pan_x:.1f}" y="{pan_y:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
-               f'<text x="{pan_x+12:.1f}" y="{pan_y+18:.1f}" font-size="11" font-weight="bold">PANAL · UNA TIRA</text>')
+               f'<text x="{pan_x+12:.1f}" y="{pan_y+18:.1f}" font-size="11" font-weight="bold">PANAL · 4 TIRAS</text>')
     tiras = tiras_panal(r)
-    for idx, tira in enumerate(tiras[:2]):
-        largo = tira["largo"]
-        alto = tira["alto"]
-        n = tira["n_tramos"]
-        p = tira["tramo"]
-        y = pan_y+45+idx*58
-        escala_tira = min(1.4, 220/max(largo,1))
-        px1 = pan_x+45
-        px2 = px1+largo*escala_tira
-        out.append(f'<rect x="{px1:.1f}" y="{y:.1f}" width="{px2-px1:.1f}" height="{max(18,alto/3):.1f}" fill="#f2ead8" stroke="#222"/>')
-        for k in range(1,n):
-            xx=px1+(px2-px1)*k/n
-            out.append(f'<line x1="{xx:.1f}" y1="{y:.1f}" x2="{xx:.1f}" y2="{y+max(18,alto/3):.1f}" '
-                       f'stroke="#2e7d4f" stroke-width="1" stroke-dasharray="{7 if k%2 else 1} 4"/>')
-        out.append(f'<text x="{(px1+px2)/2:.1f}" y="{y-5:.1f}" font-size="8" text-anchor="middle">'
-                   f'{formato_mm(largo)} × {formato_mm(alto)} · n={n} · p={formato_mm(p)}</text>')
-    out.append(f'<text x="{pan_x+12:.1f}" y="{pan_y+150:.1f}" font-size="8">'
-               f'1 cortar 2 tiras T y 2 tiras L · 2 marcar cada p · 3 plegar zigzag · 4 profundidad d · 5 insertar</text>')
+    tira_tf, tira_lr = tiras
+    largo_tf = tira_tf["largo"]
+    alto_tf = tira_tf["alto"]
+    n_tf = tira_tf["n_tramos"]
+    p_tf = tira_tf["tramo"]
+    largo_lr = tira_lr["largo"]
+    alto_lr = tira_lr["alto"]
+    n_lr = tira_lr["n_tramos"]
+    p_lr = tira_lr["tramo"]
+
+    px1 = pan_x + 24
+    px2 = pan_x + 142
+    py1 = pan_y + 62
+    py2 = py1 + 115
+
+    out.append(f'<rect x="{px1:.1f}" y="{py1:.1f}" width="{px2-px1:.1f}" height="{py2-py1:.1f}" '
+               'fill="#f2ead8" stroke="#222" stroke-width="1.5"/>')
+    for k in range(1, n_tf):
+        xx = px1 + (px2-px1)*k/n_tf
+        if k % 2:
+            out.append(f'<line x1="{xx:.1f}" y1="{py1:.1f}" x2="{xx:.1f}" y2="{py2:.1f}" '
+                       'stroke="#2e7d4f" stroke-width="1.3" stroke-dasharray="9 6"/>')
+        else:
+            out.append(f'<line x1="{xx:.1f}" y1="{py1:.1f}" x2="{xx:.1f}" y2="{py2:.1f}" '
+                       'stroke="#c55a11" stroke-width="1.3" stroke-dasharray="12 4 3 4"/>')
+
+    out.append(f'<line x1="{px1:.1f}" y1="{py1-23:.1f}" x2="{px2:.1f}" y2="{py1-23:.1f}" '
+               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{(px1+px2)/2:.1f}" y="{py1-29:.1f}" font-size="9" fill="#c0392b" text-anchor="middle">'
+               f'{formato_mm(largo_tf)}</text>')
+
+    tramos = "  ".join(formato_mm(p_tf) for _ in range(n_tf))
+    out.append(f'<text x="{px1:.1f}" y="{py1-11:.1f}" font-size="8" fill="#c0392b">'
+               f'{tramos}</text>')
+
+    out.append(f'<line x1="{px1-23:.1f}" y1="{py1:.1f}" x2="{px1-23:.1f}" y2="{py2:.1f}" '
+               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{px1-27:.1f}" y="{(py1+py2)/2:.1f}" font-size="9" fill="#c0392b" '
+               f'text-anchor="middle" transform="rotate(-90 {px1-27:.1f} {(py1+py2)/2:.1f})">'
+               f'{formato_mm(alto_tf)}</text>')
+
+    tx = pan_x + 154
+    ty = pan_y + 63
+    out.append(
+        f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="8">'
+        f'<tspan x="{tx:.1f}" dy="0">1 Corta 2 tiras de</tspan>'
+        f'<tspan x="{tx:.1f}" dy="11">{formato_mm(largo_tf)} × {formato_mm(alto_tf)} mm</tspan>'
+        f'<tspan x="{tx:.1f}" dy="11">y 2 tiras de {formato_mm(largo_lr)} ×</tspan>'
+        f'<tspan x="{tx:.1f}" dy="11">{formato_mm(alto_lr)} mm.</tspan>'
+        f'<tspan x="{tx:.1f}" dy="13">2 Marca cada {formato_mm(p_tf)} mm.</tspan>'
+        f'<tspan x="{tx:.1f}" dy="11">Lateral: {formato_mm(p_lr)} mm</tspan>'
+        f'<tspan x="{tx:.1f}" dy="11">({n_lr} tramos).</tspan>'
+        f'<tspan x="{tx:.1f}" dy="13">3 Pliega en zigzag.</tspan>'
+        f'<tspan x="{tx:.1f}" dy="11">Profundidad d = {formato_mm(r.d)} mm.</tspan>'
+        f'<tspan x="{tx:.1f}" dy="13">4 Inserta entre pared y solapa.</tspan></text>'
+        f'<text x="{tx:.1f}" y="{pan_y+171:.1f}" font-size="8" fill="#2e7d4f">valle</text>'
+        f'<line x1="{tx+38:.1f}" y1="{pan_y+168:.1f}" x2="{tx+128:.1f}" y2="{pan_y+168:.1f}" '
+        'stroke="#2e7d4f" stroke-width="1.3" stroke-dasharray="9 6"/>'
+        f'<text x="{tx:.1f}" y="{pan_y+185:.1f}" font-size="8" fill="#c55a11">montaña</text>'
+        f'<line x1="{tx+38:.1f}" y1="{pan_y+182:.1f}" x2="{tx+128:.1f}" y2="{pan_y+182:.1f}" '
+        'stroke="#c55a11" stroke-width="1.3" stroke-dasharray="12 4 3 4"/>'
+    )
 
     scale_x = W-margin-150
     scale_y = ley_y+detail_h-25
