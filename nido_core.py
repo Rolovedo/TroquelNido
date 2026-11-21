@@ -896,9 +896,6 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         y1, y2 = sorted((aa[1], bb[1]))
         out.append(f'<rect x="{x1:.1f}" y="{y1:.1f}" width="{x2-x1:.1f}" '
                    f'height="{y2-y1:.1f}" fill="{colores[nombre]}" stroke="#ffffff" stroke-width="0.5"/>')
-        if nombre in ("pared frontal", "pared trasera"):
-            out.append(f'<rect x="{x1:.1f}" y="{y1:.1f}" width="{x2-x1:.1f}" '
-                       f'height="{y2-y1:.1f}" fill="url(#patron-panal)" opacity="0.82"/>')
         cx, cy = (x1+x2)/2, (y1+y2)/2
         ancho = abs(p2[0]-p1[0])
         alto = abs(p2[1]-p1[1])
@@ -1139,15 +1136,60 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
 
     out.append(f'<rect x="{bx:.1f}" y="{by:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
                f'<text x="{bx+12:.1f}" y="{by+18:.1f}" font-size="11" font-weight="bold">DETALLE B · ranura ampliada</text>')
-    rf = r.encastre_datos["tab_frontal"]+1
-    rl = r.encastre_datos["tab_izquierda"]+1
-    bx1 = bx+(detail_w-rf*2)/2
-    by1 = by+85
-    out.append(f'<line x1="{bx1:.1f}" y1="{by1:.1f}" x2="{bx1+rf*2:.1f}" y2="{by1:.1f}" stroke="#1f6f8b" stroke-width="4"/>'
-               f'<text x="{bx1+rf:.1f}" y="{by1-8:.1f}" font-size="9" text-anchor="middle">frontal largo {formato_mm(rf)}</text>'
-               f'<line x1="{bx1:.1f}" y1="{by1+28:.1f}" x2="{bx1+rl*2:.1f}" y2="{by1+28:.1f}" stroke="#1f6f8b" stroke-width="4"/>'
-               f'<text x="{bx1+rl:.1f}" y="{by1+44:.1f}" font-size="9" text-anchor="middle">lateral largo {formato_mm(rl)} · centrada</text>'
-               f'<text x="{bx+12:.1f}" y="{by+145:.1f}" font-size="9">a {formato_mm(r.encastre_datos["off_encastre"])} del pliegue · distancias laterales iguales</text>')
+    off = r.encastre_datos["off_encastre"]
+    r1 = r.encastre_datos["tab_trasera"] + 1
+    r2 = r.encastre_datos["tab_izquierda"] + 1
+    r3 = r.encastre_datos["tab_frontal"] + 1
+    r4 = r.encastre_datos["tab_derecha"] + 1
+    escala_base = min(190.0 / r.Lb, 112.0 / r.Wb)
+    base_w = r.Lb * escala_base
+    base_h = r.Wb * escala_base
+    base_x0 = bx + (detail_w - base_w) / 2
+    base_x1 = base_x0 + base_w
+    base_y0 = by + 64
+    base_y1 = base_y0 + base_h
+    base_cx = (base_x0 + base_x1) / 2
+    base_cy = (base_y0 + base_y1) / 2
+
+    out.append(f'<rect x="{base_x0:.1f}" y="{base_y0:.1f}" width="{base_w:.1f}" height="{base_h:.1f}" '
+               'fill="#ebd5a4" stroke="#222" stroke-width="1"/>')
+
+    visual_r1 = r1 * escala_base
+    visual_r2 = r2 * escala_base
+    visual_r3 = r3 * escala_base
+    visual_r4 = r4 * escala_base
+    visual_off = off * escala_base
+    r1_y = base_y0 + visual_off
+    r3_y = base_y1 - visual_off
+    r2_x = base_x0 + visual_off
+    r4_x = base_x1 - visual_off
+
+    out.append(f'<line x1="{base_cx-visual_r1/2:.1f}" y1="{r1_y:.1f}" '
+               f'x2="{base_cx+visual_r1/2:.1f}" y2="{r1_y:.1f}" stroke="#1f6f8b" stroke-width="3"/>'
+               f'<text x="{base_cx:.1f}" y="{base_y0-12:.1f}" font-size="9" text-anchor="middle" '
+               f'fill="#1f6f8b" font-weight="bold">R1 · {formato_mm(r1)} mm</text>'
+               f'<text x="{bx+12:.1f}" y="{base_y0-12:.1f}" font-size="8" fill="#777">L1 →</text>')
+    out.append(f'<line x1="{r2_x:.1f}" y1="{base_cy-visual_r2/2:.1f}" '
+               f'x2="{r2_x:.1f}" y2="{base_cy+visual_r2/2:.1f}" stroke="#1f6f8b" stroke-width="3"/>'
+               f'<text x="{base_x0-8:.1f}" y="{base_cy:.1f}" font-size="9" text-anchor="end" '
+               f'fill="#1f6f8b" font-weight="bold" transform="rotate(-90 {base_x0-8:.1f} {base_cy:.1f})">'
+               f'R2 · {formato_mm(r2)} mm</text>')
+    out.append(f'<line x1="{base_cx-visual_r3/2:.1f}" y1="{r3_y:.1f}" '
+               f'x2="{base_cx+visual_r3/2:.1f}" y2="{r3_y:.1f}" stroke="#1f6f8b" stroke-width="3"/>'
+               f'<text x="{base_cx:.1f}" y="{base_y1+18:.1f}" font-size="9" text-anchor="middle" '
+               f'fill="#1f6f8b" font-weight="bold">R3 · {formato_mm(r3)} mm</text>')
+    out.append(f'<line x1="{r4_x:.1f}" y1="{base_cy-visual_r4/2:.1f}" '
+               f'x2="{r4_x:.1f}" y2="{base_cy+visual_r4/2:.1f}" stroke="#1f6f8b" stroke-width="3"/>'
+               f'<text x="{base_x1+8:.1f}" y="{base_cy:.1f}" font-size="9" text-anchor="start" '
+               f'fill="#1f6f8b" font-weight="bold" transform="rotate(-90 {base_x1+8:.1f} {base_cy:.1f})">'
+               f'R4 · {formato_mm(r4)} mm</text>')
+
+    out.append(f'<text x="{bx+12:.1f}" y="{by+38:.1f}" font-size="9" fill="#c0392b">'
+               f'Distancia al pliegue: {formato_mm(off)} mm</text>'
+               f'<text x="{bx+12:.1f}" y="{by+52:.1f}" font-size="8" fill="#777">'
+               f'Largo = ancho de L1–L4 + 1 mm</text>'
+               f'<text x="{bx+12:.1f}" y="{by+190:.1f}" font-size="8" fill="#777">'
+               f'Corte continuo · centrada sobre su lengüeta</text>')
 
     # Leyenda y datos fuera de la cruz.
     ley_x, ley_y = margin, H-detail_h-margin

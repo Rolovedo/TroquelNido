@@ -662,6 +662,18 @@ def test_cuatro_pares_lengüeta_ranura_tienen_ancho_coincidente():
         assert ranura["ancho"] == pytest.approx(esperados[ranura["lengüeta"]] + 1)
 
 
+def test_svg_detalle_b_muestra_las_cuatro_ranuras_con_medidas():
+    resultado = nc.calcular(entrada_valida(largo=55, ancho=45, alto=70), CONFIG)
+    svg = nc.svg(resultado)
+
+    assert "DETALLE B · ranura ampliada" in svg
+    for etiqueta in ("R1", "R2", "R3", "R4"):
+        assert f"{etiqueta} ·" in svg
+    assert "Distancia al pliegue:" in svg
+    assert "Largo = ancho de L1–L4 + 1 mm" in svg
+    assert 'fill="#ebd5a4"' in svg
+
+
 def test_svg_identifica_encastre_panal_y_leyenda():
     resultado = nc.calcular(entrada_valida(largo=55, ancho=45, alto=70), CONFIG)
     svg = nc.svg(resultado)
