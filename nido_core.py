@@ -490,7 +490,26 @@ def geometria(r: Resultado):
     ranura = ((cx - tw / 2, slot_y), (cx + tw / 2, slot_y))
     return dict(x0=x0, xB0=xB0, xB1=xB1, xF=xF, yT=yT, ySw=ySw, yB0=yB0, yB1=yB1,
                 yFw=yFw, yEnd=yEnd, cx=cx, contorno=contorno, pliegues=pliegues,
-                ranura=ranura, slot_y=slot_y)
+                ranura=ranura, ranuras=[], slot_y=slot_y,
+                back_cx=cx, back_left=cx-tw/2, back_right=cx+tw/2,
+                front_cx=cx, front_left=cx-tw/2, front_right=cx+tw/2,
+                left_top=yB0, left_bottom=yB1, left_cy=(yB0+yB1)/2,
+                right_top=yB0, right_bottom=yB1, right_cy=(yB0+yB1)/2,
+                xSolapaIzq=x0, xParedIzq=r.Hs,
+                xParedDer=xB1+r.Hw, xSolapaDer=xF,
+                paneles=[
+                    ("BASE", (xB0, yB0), (xB1, yB1)),
+                    ("pared trasera", (xB0, ySw), (xB1, yB0)),
+                    ("pared frontal", (xB0, yB1), (xB1, yFw)),
+                    ("pared izquierda", (r.Hs, yB0), (xB0, yB1)),
+                    ("pared derecha", (xB1, yB0), (xB1+r.Hw, yB1)),
+                    ("solapa trasera", (xB0, yT), (xB1, ySw)),
+                    ("solapa frontal", (xB0, yFw), (xB1, yEnd)),
+                    ("solapa izquierda", (x0, yB0), (r.Hs, yB1)),
+                    ("solapa derecha", (xB1+r.Hw, yB0), (xF, yB1)),
+                ],
+                lengüetas=[],
+                tabs={})
 
 
 def parametros_tira_panal(largo: float, profundidad: float) -> tuple[int, float, float, float]:
@@ -861,10 +880,23 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         aa, bb = tr(a), tr(b)
         out.append(f'<line x1="{aa[0]:.1f}" y1="{aa[1]:.1f}" x2="{bb[0]:.1f}" y2="{bb[1]:.1f}" '
                    'stroke="#2e7d4f" stroke-width="1.2" stroke-dasharray="7 4"/>')
-    for ranura in g["ranuras"]:
-        aa, bb = tr(ranura["p1"]), tr(ranura["p2"])
-        out.append(f'<line x1="{aa[0]:.1f}" y1="{aa[1]:.1f}" x2="{bb[0]:.1f}" y2="{bb[1]:.1f}" '
-                   'stroke="#1f6f8b" stroke-width="3"/>')
+    if r.encastre:
+        for ranura in g["ranuras"]:
+            aa, bb = tr(ranura["p1"]), tr(ranura["p2"])
+            out.append(f'<line x1="{aa[0]:.1f}" y1="{aa[1]:.1f}" x2="{bb[0]:.1f}" y2="{bb[1]:.1f}" '
+                       'stroke="#1f6f8b" stroke-width="3"/>')
+            px, py = (aa[0]+bb[0])/2, (aa[1]+bb[1])/2
+            out.append(f'<text x="{px:.1f}" y="{py-4:.1f}" font-size="8" fill="#1f6f8b" '
+                       f'text-anchor="middle" font-weight="bold">{ranura["lengüeta"]} / {ranura["id"]}</text>')
+        for label, cx, cy in (
+            ("L1", g["back_cx"], g["yT"]-r.encastre_datos["tab_alto"]/2),
+            ("L2", r.encastre_datos["tab_alto"]/2, g["left_cy"]),
+            ("L3", g["front_cx"], g["yEnd"]+r.encastre_datos["tab_alto"]/2),
+            ("L4", g["xF"]-r.encastre_datos["tab_alto"]/2, g["right_cy"]),
+        ):
+            px, py = tr((cx, cy))
+            out.append(f'<text x="{px:.1f}" y="{py+3:.1f}" font-size="9" fill="#1f6f8b" '
+                       f'text-anchor="middle" font-weight="bold">{label}</text>')
 
     # Cotas directas sobre la cruz.
     d = r.encastre_datos
@@ -1013,6 +1045,7 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         f'<text x="{ley_x+155:.1f}" y="{ley_y+44:.1f}" font-size="9">pliegue</text>',
         f'<line x1="{ley_x+205:.1f}" y1="{ley_y+40:.1f}" x2="{ley_x+248:.1f}" y2="{ley_y+40:.1f}" stroke="#1f6f8b" stroke-width="4"/>',
         f'<text x="{ley_x+255:.1f}" y="{ley_y+44:.1f}" font-size="9">ranura</text>',
+        f'<text x="{ley_x+12:.1f}" y="{ley_y+52:.1f}" font-size="8">L1-L4 · lengüetas · R1-R4 · ranuras</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+60:.1f}" font-size="9">Medidas en mm, ancho × alto tal como se ven.</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+74:.1f}" font-size="9">Los pliegues coinciden con los bordes de cada panel.</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+94:.1f}" font-size="11" font-weight="bold">DATOS</text>',
@@ -1038,62 +1071,65 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
     alto_tf = tira_tf["alto"]
     n_tf = tira_tf["n_tramos"]
     p_tf = tira_tf["tramo"]
+    f_tf = tira_tf["tramo_plano"]
     largo_lr = tira_lr["largo"]
     alto_lr = tira_lr["alto"]
     n_lr = tira_lr["n_tramos"]
     p_lr = tira_lr["tramo"]
+    f_lr = tira_lr["tramo_plano"]
 
-    px1 = pan_x + 24
-    px2 = pan_x + 142
-    py1 = pan_y + 62
-    py2 = py1 + 115
+    perfiles = [
+        ("F1", n_tf, f_tf, largo_tf),
+        ("F2", n_tf, f_tf, largo_tf),
+        ("F3", n_tf, f_tf, largo_tf),
+        ("F4", n_tf, f_tf, largo_tf),
+        ("S1", n_lr, f_lr, largo_lr),
+        ("S2", n_lr, f_lr, largo_lr),
+        ("S3", n_lr, f_lr, largo_lr),
+        ("S4", n_lr, f_lr, largo_lr),
+    ]
+    ancho_mini = 118.0
+    for indice, (etiqueta, n_tira, tramo_plano, largo_tira) in enumerate(perfiles):
+        col = indice % 2
+        fila = indice // 2
+        x0 = pan_x + 22 + col*142
+        y0 = pan_y + 40 + fila*38
+        perfil = perfil_tira_panal(n_tira, tramo_plano, r.d)
+        x_max = max(x for x, _ in perfil)
+        z_scale = 11.0 / r.d
+        x_scale = ancho_mini / x_max if x_max > 0 else 1.0
 
-    out.append(f'<rect x="{px1:.1f}" y="{py1:.1f}" width="{px2-px1:.1f}" height="{py2-py1:.1f}" '
-               'fill="#f2ead8" stroke="#222" stroke-width="1.5"/>')
-    for k in range(1, n_tf):
-        xx = px1 + (px2-px1)*k/n_tf
-        if k % 2:
-            out.append(f'<line x1="{xx:.1f}" y1="{py1:.1f}" x2="{xx:.1f}" y2="{py2:.1f}" '
-                       'stroke="#2e7d4f" stroke-width="1.3" stroke-dasharray="9 6"/>')
-        else:
-            out.append(f'<line x1="{xx:.1f}" y1="{py1:.1f}" x2="{xx:.1f}" y2="{py2:.1f}" '
-                       'stroke="#c55a11" stroke-width="1.3" stroke-dasharray="12 4 3 4"/>')
+        puntos_a = " ".join(
+            f"{x0+x*x_scale:.1f},{y0+24-z*z_scale:.1f}" for x, z in perfil
+        )
+        puntos_b = " ".join(
+            f"{x0+x*x_scale:.1f},{y0+24-(r.d-z)*z_scale:.1f}" for x, z in perfil
+        )
+        out.append(f'<text x="{x0:.1f}" y="{y0+3:.1f}" font-size="8" font-weight="bold">{etiqueta}</text>')
+        out.append(f'<polyline points="{puntos_a}" fill="none" stroke="#b5542a" stroke-width="1.4"/>')
+        out.append(f'<polyline points="{puntos_b}" fill="none" stroke="#2a6f97" stroke-width="1.4"/>')
+        out.append(f'<rect x="{x0:.1f}" y="{y0+13:.1f}" width="{ancho_mini:.1f}" height="22" '
+                   'fill="none" stroke="#c7b99e" stroke-width="0.5"/>')
+        for punto_indice, (x, z_a) in enumerate(perfil):
+            xx = x0+x*x_scale
+            ya = y0+24-z_a*z_scale
+            yb = y0+24-(r.d-z_a)*z_scale
+            if punto_indice not in (0, len(perfil)-1):
+                color = "#2e7d4f" if punto_indice % 2 else "#c55a11"
+                estilo = 'stroke-dasharray="5 3"' if punto_indice % 2 else 'stroke-dasharray="8 3 2 3"'
+                out.append(f'<line x1="{xx:.1f}" y1="{ya:.1f}" x2="{xx:.1f}" y2="{yb:.1f}" '
+                           f'stroke="{color}" stroke-width="1.1" {estilo}/>')
+        out.append(f'<text x="{x0+ancho_mini:.1f}" y="{y0+6:.1f}" font-size="7" fill="#c0392b" '
+                   f'text-anchor="end">{formato_mm(largo_tira)} × {formato_mm(r.Hs)} × {formato_mm(r.d)}</text>')
 
-    out.append(f'<line x1="{px1:.1f}" y1="{py1-23:.1f}" x2="{px2:.1f}" y2="{py1-23:.1f}" '
-               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
-               f'<text x="{(px1+px2)/2:.1f}" y="{py1-29:.1f}" font-size="9" fill="#c0392b" text-anchor="middle">'
-               f'{formato_mm(largo_tf)}</text>')
-
-    tramos = "  ".join(formato_mm(p_tf) for _ in range(n_tf))
-    out.append(f'<text x="{px1:.1f}" y="{py1-11:.1f}" font-size="8" fill="#c0392b">'
-               f'{tramos}</text>')
-
-    out.append(f'<line x1="{px1-23:.1f}" y1="{py1:.1f}" x2="{px1-23:.1f}" y2="{py2:.1f}" '
-               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
-               f'<text x="{px1-27:.1f}" y="{(py1+py2)/2:.1f}" font-size="9" fill="#c0392b" '
-               f'text-anchor="middle" transform="rotate(-90 {px1-27:.1f} {(py1+py2)/2:.1f})">'
-               f'{formato_mm(alto_tf)}</text>')
-
-    tx = pan_x + 154
-    ty = pan_y + 63
+    tx = pan_x + 12
+    ty = pan_y + 192
     out.append(
-        f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="8">'
-        f'<tspan x="{tx:.1f}" dy="0">1 Corta 4 tiras frontal/trasera de</tspan>'
-        f'<tspan x="{tx:.1f}" dy="11">{formato_mm(largo_tf)} × {formato_mm(alto_tf)} mm</tspan>'
-        f'<tspan x="{tx:.1f}" dy="11">y 4 tiras laterales de {formato_mm(largo_lr)} ×</tspan>'
-        f'<tspan x="{tx:.1f}" dy="11">{formato_mm(alto_lr)} mm.</tspan>'
-        f'<tspan x="{tx:.1f}" dy="13">2 Marca cada {formato_mm(p_tf)} mm.</tspan>'
-        f'<tspan x="{tx:.1f}" dy="11">Lateral: {formato_mm(p_lr)} mm</tspan>'
-        f'<tspan x="{tx:.1f}" dy="11">({n_lr} tramos).</tspan>'
-        f'<tspan x="{tx:.1f}" dy="13">3 Pliega en zigzag.</tspan>'
-        f'<tspan x="{tx:.1f}" dy="11">Profundidad d = {formato_mm(r.d)} mm.</tspan>'
-        f'<tspan x="{tx:.1f}" dy="13">4 Inserta entre pared y solapa.</tspan></text>'
-        f'<text x="{tx:.1f}" y="{pan_y+171:.1f}" font-size="8" fill="#2e7d4f">valle</text>'
-        f'<line x1="{tx+38:.1f}" y1="{pan_y+168:.1f}" x2="{tx+128:.1f}" y2="{pan_y+168:.1f}" '
-        'stroke="#2e7d4f" stroke-width="1.3" stroke-dasharray="9 6"/>'
-        f'<text x="{tx:.1f}" y="{pan_y+185:.1f}" font-size="8" fill="#c55a11">montaña</text>'
-        f'<line x1="{tx+38:.1f}" y1="{pan_y+182:.1f}" x2="{tx+128:.1f}" y2="{pan_y+182:.1f}" '
-        'stroke="#c55a11" stroke-width="1.3" stroke-dasharray="12 4 3 4"/>'
+        f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="7">'
+        f'<tspan x="{tx:.1f}" dy="0">F1-F4: {formato_mm(largo_tf)} × {formato_mm(alto_tf)} mm</tspan>'
+        f'<tspan x="{tx+145:.1f}" dy="0">S1-S4: {formato_mm(largo_lr)} × {formato_mm(alto_lr)} mm</tspan>'
+        f'<tspan x="{tx:.1f}" dy="10">Perfiles A/B hexagonales · Profundidad d = {formato_mm(r.d)} mm · 8 piezas</tspan>'
+        f'</text>'
     )
 
     scale_x = W-margin-150

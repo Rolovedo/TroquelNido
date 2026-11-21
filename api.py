@@ -79,6 +79,17 @@ def troquel(request: TroquelRequest) -> dict:
             "ancho_base": resultado.Wb,
             "alto_pared": resultado.Hw,
             "alto_solapa": resultado.Hs,
+            "encastre": resultado.encastre,
+            "tiras_panal": nc.tiras_panal(resultado),
+            "tapa": {
+                "off_encastre": resultado.encastre_datos.get("off_encastre"),
+                "tab_trasera": resultado.encastre_datos.get("tab_trasera"),
+                "tab_frontal": resultado.encastre_datos.get("tab_frontal"),
+                "tab_izquierda": resultado.encastre_datos.get("tab_izquierda"),
+                "tab_derecha": resultado.encastre_datos.get("tab_derecha"),
+                "tab_alto": resultado.encastre_datos.get("tab_alto"),
+                "tab_chaflan": resultado.encastre_datos.get("tab_chaflan"),
+            } if resultado.encastre else None,
             "ancho_total": resultado.ancho_total,
             "alto_total": resultado.alto_total,
             "hoja_disponible": {
@@ -87,6 +98,7 @@ def troquel(request: TroquelRequest) -> dict:
             },
             "advertencias": resultado.advertencias,
         },
+        "pasos": nc.pasos(resultado),
         "svg": nc.svg(resultado),
     }
     if request.debug_coordenadas:

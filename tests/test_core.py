@@ -4,9 +4,12 @@ import html
 
 import nido_core as nc
 from config import cargar_configuracion
+from fastapi.testclient import TestClient
+from api import app
 
 
 CONFIG = cargar_configuracion()
+CLIENT = TestClient(app)
 
 
 @pytest.mark.parametrize(("valor", "unidad", "esperado"), [(25, "mm", 25), (2.5, "cm", 25)])
@@ -520,3 +523,182 @@ def test_advierte_si_el_troquel_no_cabe_en_la_hoja():
 def test_rechaza_dimensiones_fuera_de_rango(campo, valor):
     with pytest.raises(ValueError, match=campo):
         nc.calcular(entrada_valida(**{campo: valor}), CONFIG)
+
+
+def test_tiras_panal_devuelve_cuatro_largas_y_cuatro_laterales():
+    resultado = nc.calcular(entrada_valida(largo=75, ancho=55, alto=90), CONFIG)
+    tiras = nc.tiras_panal(resultado)
+
+    assert len(tiras) == 2
+    assert tiras[0]["tipo"] == "frontal/trasera"
+    assert tiras[1]["tipo"] == "laterales"
+    assert tiras[0]["cantidad"] == 4
+    assert tiras[1]["cantidad"] == 4
+    assert sum(tira["cantidad"] for tira in tiras) == 8
+
+
+def test_combinacion_cualquiera_produce_exactamente_ocho_tiras():
+    resultado = nc.calcular(entrada_valida(largo=63, ancho=47, alto=72), CONFIG)
+    tiras = nc.tiras_panal(resultado)
+
+    assert sum(tira["cantidad"] for tira in tiras) == 8
+    assert all(tira["largo"] > 0 for tira in tiras)
+    assert all(tira["alto"] > 0 for tira in tiras)
+    assert all(tira["profundidad"] > 0 for tira in tiras)
+
+
+def test_dimensiones_panal_cambian_con_largo_ancho_y_alto():
+    base = nc.calcular(entrada_valida(largo=50, ancho=40, alto=60), CONFIG)
+    largo = nc.calcular(entrada_valida(largo=70, ancho=40, alto=60), CONFIG)
+    ancho = nc.calcular(entrada_valida(largo=50, ancho=65, alto=60), CONFIG)
+    alto = nc.calcular(entrada_valida(largo=50, ancho=40, alto=85), CONFIG)
+
+    base_tiras = nc.tiras_panal(base)
+    largo_tiras = nc.tiras_panal(largo)
+    ancho_tiras = nc.tiras_panal(ancho)
+    alto_tiras = nc.tiras_panal(alto)
+
+    assert largo_tiras[0]["largo"] != base_tiras[0]["largo"]
+    assert ancho_tiras[1]["largo"] != base_tiras[1]["largo"]
+    assert alto_tiras[0]["alto"] != base_tiras[0]["alto"]
+
+
+def test_cuatro_pares_lengüeta_ranura_tienen_ancho_coincidente():
+    resultado = nc.calcular(entrada_valida(largo=55, ancho=45, alto=70), CONFIG)
+    g = nc.geometria(resultado)
+
+    esperados = {
+        "L1": resultado.encastre_datos["tab_trasera"],
+        "L2": resultado.encastre_datos["tab_izquierda"],
+        "L3": resultado.encastre_datos["tab_frontal"],
+        "L4": resultado.encastre_datos["tab_derecha"],
+    }
+    for ranura in g["ranuras"]:
+        assert ranura["lengüeta"] in esperados
+        assert ranura["ancho"] == pytest.approx(esperados[ranura["lengüeta"]] + 1)
+
+
+def test_svg_identifica_encastre_panal_y_leyenda():
+    resultado = nc.calcular(entrada_valida(largo=55, ancho=45, alto=70), CONFIG)
+    svg = nc.svg(resultado)
+
+    for etiqueta in ("L1", "L2", "L3", "L4", "R1", "R2", "R3", "R4"):
+        assert etiqueta in svg
+    assert "PANAL · 8 TIRAS HEXAGONALES" in svg
+    assert "F1" in svg and "S4" in svg
+    assert ">corte</text>" in svg or ">corte<" in svg
+    assert ">pliegue</text>" in svg or ">pliegue<" in svg
+    assert ">ranura</text>" in svg or ">ranura<" in svg
+    assert "Sin pegante" not in svg
+
+
+def test_svg_no_repite_medidas_fijas_de_120x80x100():
+    resultado = nc.calcular(entrada_valida(largo=55, ancho=45, alto=70), CONFIG)
+    svg = nc.svg(resultado)
+
+    assert "Producto 55 × 45 × 70" in svg
+    assert "Hoja mínima 804 × 764" not in svg
+    assert "Hoja mínima 804" not in svg
+    assert "172.0" not in svg or "172 × 132 × 152" not in svg
+
+
+def test_encastre_false_no_modifica_dimensiones_de_base():
+    con_encastre = nc.calcular(entrada_valida(largo=55, ancho=45, alto=70), CONFIG)
+    sin_encastre = nc.calcular(entrada_valida(largo=55, ancho=45, alto=70, encastre=False), CONFIG)
+
+    assert sin_encastre.Lb == con_encastre.Lb
+    assert sin_encastre.Wb == con_encastre.Wb
+    assert sin_encastre.Hw == con_encastre.Hw
+    assert sin_encastre.Hs == con_encastre.Hs
+    assert sin_encastre.encastre is False
+    assert nc.geometria(sin_encastre)["ranuras"] == []
+
+
+def _payload(largo, ancho, alto, encastre=True):
+    return {
+        "tipo": "cerámica / taza",
+        "material": "cerámica",
+        "unidad": "mm",
+        "largo": largo,
+        "ancho": ancho,
+        "alto": alto,
+        "peso": 0.4,
+        "flauta": "E",
+        "encastre": encastre,
+    }
+
+
+def test_api_opciones():
+    response = CLIENT.get("/opciones")
+
+    assert response.status_code == 200
+    assert "tipos" in response.json()
+    assert "materiales" in response.json()
+    assert "flautas" in response.json()
+
+
+def test_api_120x80x100_devuelve_diseno_completo():
+    response = CLIENT.post("/troquel", json=_payload(120, 80, 100))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["medidas"]["largo_base"] == pytest.approx(172)
+    assert body["medidas"]["ancho_base"] == pytest.approx(132)
+    assert body["medidas"]["alto_pared"] == pytest.approx(152)
+    assert body["medidas"]["alto_solapa"] == pytest.approx(149)
+    assert body["medidas"]["encastre"] is True
+    assert sum(tira["cantidad"] for tira in body["medidas"]["tiras_panal"]) == 8
+    assert body["medidas"]["tapa"]["tab_trasera"] > 0
+    assert body["medidas"]["ancho_total"] > 0
+    assert body["medidas"]["alto_total"] > 0
+    assert isinstance(body["medidas"]["advertencias"], list)
+    assert isinstance(body["pasos"], list)
+    assert body["svg"].startswith("<svg")
+
+
+def test_api_48x50x80_devuelve_medidas_distintas():
+    grande = CLIENT.post("/troquel", json=_payload(120, 80, 100)).json()
+    pequena = CLIENT.post("/troquel", json=_payload(48, 50, 80)).json()
+
+    assert pequena["medidas"]["largo_base"] != grande["medidas"]["largo_base"]
+    assert pequena["medidas"]["ancho_total"] != grande["medidas"]["ancho_total"]
+    assert pequena["medidas"]["alto_total"] != grande["medidas"]["alto_total"]
+
+
+def test_api_encastre_false_sigue_siendovalido():
+    response = CLIENT.post("/troquel", json=_payload(48, 50, 80, encastre=False))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["medidas"]["encastre"] is False
+    assert body["medidas"]["tapa"] is None
+    assert sum(tira["cantidad"] for tira in body["medidas"]["tiras_panal"]) == 8
+    assert body["svg"].startswith("<svg")
+
+
+@pytest.mark.parametrize(("campo", "valor"), [
+    ("largo", 9),
+    ("ancho", 1001),
+    ("alto", 0),
+])
+def test_api_dimensiones_invalidas_devuelven_400(campo, valor):
+    payload = _payload(48, 50, 80)
+    payload[campo] = valor
+
+    response = CLIENT.post("/troquel", json=payload)
+
+    assert response.status_code == 400
+
+
+def test_interfaz_web_incluye_encastre_obligatorio_solo_visual():
+    web = open("web/index.html", "r", encoding="utf-8").read()
+
+    assert 'id="encastre"' not in web
+    assert "Incluye tapa con cierre por lengüetas y ranuras" not in web
+    assert "datos.encastre = true" in web
+    assert "Pasos de trazado y armado" not in web
+    assert 'id="steps"' not in web
+    assert "Descargar SVG" in web
+    assert "Descargar PNG" in web
+    assert "Descargar PDF 1:1" in web
+    assert "overflow: auto" in web
