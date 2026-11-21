@@ -666,10 +666,15 @@ def test_svg_detalle_b_muestra_las_cuatro_ranuras_con_medidas():
     svg = nc.svg(resultado)
 
     assert "DETALLE B · ranura ampliada" in svg
-    for etiqueta in ("R1", "R2", "R3", "R4"):
-        assert f"{etiqueta} ·" in svg
-    assert "Distancia al pliegue:" in svg
-    assert "Ranuras R1-R8" in svg or "R1-R8" in svg
+    assert "PARED TRASERA" in svg
+    assert "PARED DERECHA" in svg
+    assert "R1–R2" in svg
+    assert "R7–R8" in svg
+    assert "longitud" in svg
+    assert "Costado" in svg
+    assert "Al pliegue" in svg
+    assert "R3" not in svg or "R3 ·" not in svg
+    assert "R4" not in svg or "R4 ·" not in svg
     assert 'fill="#ebd5a4"' in svg
 
 

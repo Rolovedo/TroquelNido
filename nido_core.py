@@ -1363,7 +1363,6 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
             f'<polygon points="{pts}" fill="#fff" fill-opacity=".35" '
             f'stroke="#111" stroke-width="0.8"/>'
         )
-
     panel_x1, panel_y1 = transformar_tapa((geometria_tapa_resultado["x0"], geometria_tapa_resultado["y0"]))
     panel_x2, panel_y2 = transformar_tapa((geometria_tapa_resultado["x1"], geometria_tapa_resultado["y1"]))
     panel_cx = (panel_x1+panel_x2)/2
@@ -1392,10 +1391,8 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         f'Altura lengüeta: 15 mm · chaflán: 3 mm</text>'
     )
 
-    # Recuadros A y B fuera de la cruz.
+    # Detalle A · lengüeta ampliada.
     ax, ay = margin, margin+35
-    bx = W-margin-detail_w
-    by = margin+35
     out.append(f'<rect x="{ax:.1f}" y="{ay:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
                f'<text x="{ax+12:.1f}" y="{ay+18:.1f}" font-size="11" font-weight="bold">DETALLE A · lengüeta ampliada</text>')
     tapa_detalle = calcular_tapa(r)
@@ -1403,8 +1400,6 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
     chaflan = tapa_detalle.tab_chaflan
     alto_tab = tapa_detalle.tab_alto
     punta = max(0.0, aw-2*chaflan)
-
-    # Vista ampliada proporcional a las medidas reales de la lengüeta.
     escala_detalle = min(7.0, 210.0 / max(aw, alto_tab))
     visual_base = aw*escala_detalle
     visual_punta = punta*escala_detalle
@@ -1415,18 +1410,13 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
     ay1 = ay0+visual_alto
     px1 = (ax1+ax2-visual_punta)/2
     px2 = px1+visual_punta
-
     out.append(f'<polygon points="{ax1:.1f},{ay1:.1f} {px1:.1f},{ay0:.1f} '
                f'{px2:.1f},{ay0:.1f} {ax2:.1f},{ay1:.1f}" fill="#f8eed8" stroke="#222" stroke-width="2"/>')
-
-    # Cota superior: punta superior (ancho entre los chaflanes).
     cota_y = ay0-22
     out.append(f'<line x1="{px1:.1f}" y1="{cota_y:.1f}" x2="{px2:.1f}" y2="{cota_y:.1f}" '
                'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
                f'<text x="{(px1+px2)/2:.1f}" y="{cota_y-7:.1f}" font-size="10" '
                f'text-anchor="middle" fill="#c0392b">{formato_mm(punta)}</text>')
-
-    # Cota izquierda corta para mostrar el chaflán de 3 mm.
     if aw > 2*chaflan:
         linea_chaflan_x1 = ax1
         linea_chaflan_x2 = px1
@@ -1438,15 +1428,11 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
                    f'font-size="9" text-anchor="middle" fill="#c0392b">{formato_mm(chaflan)}</text>')
         out.append(f'<text x="{ax1-6:.1f}" y="{ay0+visual_alto/2:.1f}" font-size="9" '
                    f'text-anchor="middle" fill="#c0392b">{formato_mm(chaflan)}</text>')
-
-    # Cota inferior: base real de la lengüeta.
     base_y = ay1+24
     out.append(f'<line x1="{ax1:.1f}" y1="{base_y:.1f}" x2="{ax2:.1f}" y2="{base_y:.1f}" '
                'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
                f'<text x="{(ax1+ax2)/2:.1f}" y="{base_y+15:.1f}" font-size="10" '
                f'text-anchor="middle" fill="#c0392b">{formato_mm(aw)}</text>')
-
-    # Cota vertical y texto de centrado.
     vertical_x = ax2+28
     out.append(f'<line x1="{vertical_x:.1f}" y1="{ay0:.1f}" x2="{vertical_x:.1f}" y2="{ay1:.1f}" '
                'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
@@ -1456,62 +1442,80 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
                f'<text x="{(ax1+ax2)/2:.1f}" y="{ay1-visual_alto/2:.1f}" font-size="10" '
                f'text-anchor="middle" fill="#777">centrada</text>')
 
+    # Detalle B fuera de la cruz.
+    bx = W-margin-detail_w
+    by = margin+35
+    tapa_detalle = calcular_tapa(r)
+
     out.append(f'<rect x="{bx:.1f}" y="{by:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
                f'<text x="{bx+12:.1f}" y="{by+18:.1f}" font-size="11" font-weight="bold">DETALLE B · ranura ampliada</text>')
     off = r.encastre_datos["off_encastre"]
-    r1 = tapa_detalle.tabs["T1"] + 1
-    r2 = tapa_detalle.tabs["T5"] + 1
-    r3 = tapa_detalle.tabs["T3"] + 1
-    r4 = tapa_detalle.tabs["T7"] + 1
-    escala_base = min(190.0 / r.Lb, 112.0 / r.Wb)
-    base_w = r.Lb * escala_base
-    base_h = r.Wb * escala_base
-    base_x0 = bx + (detail_w - base_w) / 2
-    base_x1 = base_x0 + base_w
-    base_y0 = by + 64
-    base_y1 = base_y0 + base_h
-    base_cx = (base_x0 + base_x1) / 2
-    base_cy = (base_y0 + base_y1) / 2
+    r_trasera = tapa_detalle.tabs["T1"]
+    r_derecha = tapa_detalle.tabs["T5"]
+    costado_trasero = r.Lb * 0.25 - r_trasera / 2
+    separacion_trasera = r.Lb * 0.50
+    costado_derecho = r.Wb * 0.25 - r_derecha / 2
+    separacion_derecha = r.Wb * 0.50
 
-    out.append(f'<rect x="{base_x0:.1f}" y="{base_y0:.1f}" width="{base_w:.1f}" height="{base_h:.1f}" '
-               'fill="#ebd5a4" stroke="#222" stroke-width="1"/>')
+    pared_x0 = bx + 26
+    pared_y0 = by + 64
+    pared_trasera_w = 128.0
+    pared_trasera_h = 60.0
+    pared_derecha_w = 62.0
+    pared_derecha_h = 108.0
+    pared_derecha_x0 = bx + detail_w - pared_derecha_w - 26
+    pared_derecha_y0 = by + 50
 
-    visual_r1 = r1 * escala_base
-    visual_r2 = r2 * escala_base
-    visual_r3 = r3 * escala_base
-    visual_r4 = r4 * escala_base
-    visual_off = off * escala_base
-    r1_y = base_y0 + visual_off
-    r3_y = base_y1 - visual_off
-    r2_x = base_x0 + visual_off
-    r4_x = base_x1 - visual_off
+    out.append(f'<text x="{pared_x0:.1f}" y="{by+42:.1f}" font-size="8" font-weight="bold">PARED TRASERA</text>'
+               f'<rect x="{pared_x0:.1f}" y="{pared_y0:.1f}" width="{pared_trasera_w:.1f}" height="{pared_trasera_h:.1f}" '
+               'fill="#f2e4c4" stroke="#222" stroke-width="1"/>')
+    escala_trasera = pared_trasera_w / r.Lb
+    ranura_trasera = r_trasera * escala_trasera
+    r1_x = pared_x0 + pared_trasera_w * 0.25
+    r2_x = pared_x0 + pared_trasera_w * 0.75
+    ranura_y = pared_y0 + pared_trasera_h * 0.45
+    out.append(f'<line x1="{r1_x-ranura_trasera/2:.1f}" y1="{ranura_y:.1f}" '
+               f'x2="{r1_x+ranura_trasera/2:.1f}" y2="{ranura_y:.1f}" '
+               'stroke="#1f6f8b" stroke-width="3"/>'
+               f'<line x1="{r2_x-ranura_trasera/2:.1f}" y1="{ranura_y:.1f}" '
+               f'x2="{r2_x+ranura_trasera/2:.1f}" y2="{ranura_y:.1f}" '
+               'stroke="#1f6f8b" stroke-width="3"/>'
+               f'<line x1="{pared_x0:.1f}" y1="{pared_y0-8:.1f}" x2="{r1_x-ranura_trasera/2:.1f}" y2="{pared_y0-8:.1f}" '
+               'stroke="#c0392b" stroke-width="0.7" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{pared_x0+pared_x0*.0:.1f}" y="{pared_y0-12:.1f}" font-size="7" text-anchor="start" fill="#c0392b">'
+               f'Costado {formato_mm(costado_trasero)} mm</text>'
+               f'<line x1="{r1_x:.1f}" y1="{pared_y0-8:.1f}" x2="{r2_x:.1f}" y2="{pared_y0-8:.1f}" '
+               'stroke="#c0392b" stroke-width="0.7" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{(r1_x+r2_x)/2:.1f}" y="{pared_y0-12:.1f}" font-size="7" text-anchor="middle" fill="#c0392b">'
+               f'{formato_mm(separacion_trasera)} mm</text>'
+               f'<text x="{pared_x0+pared_trasera_w/2:.1f}" y="{pared_y0+pared_trasera_h+13:.1f}" '
+               f'font-size="8" text-anchor="middle" fill="#1f6f8b">R1–R2 · longitud {formato_mm(r_trasera)} mm</text>'
+               f'<text x="{pared_x0+pared_trasera_w/2:.1f}" y="{pared_y0+pared_trasera_h+26:.1f}" '
+               f'font-size="8" text-anchor="middle" fill="#c0392b">Al pliegue {formato_mm(off)} mm</text>')
 
-    out.append(f'<line x1="{base_cx-visual_r1/2:.1f}" y1="{r1_y:.1f}" '
-               f'x2="{base_cx+visual_r1/2:.1f}" y2="{r1_y:.1f}" stroke="#1f6f8b" stroke-width="3"/>'
-               f'<text x="{base_cx:.1f}" y="{base_y0-12:.1f}" font-size="9" text-anchor="middle" '
-               f'fill="#1f6f8b" font-weight="bold">R1 · {formato_mm(r1)} mm</text>'
-               f'<text x="{bx+12:.1f}" y="{base_y0-12:.1f}" font-size="8" fill="#777">L1 →</text>')
-    out.append(f'<line x1="{r2_x:.1f}" y1="{base_cy-visual_r2/2:.1f}" '
-               f'x2="{r2_x:.1f}" y2="{base_cy+visual_r2/2:.1f}" stroke="#1f6f8b" stroke-width="3"/>'
-               f'<text x="{base_x0-8:.1f}" y="{base_cy:.1f}" font-size="9" text-anchor="end" '
-               f'fill="#1f6f8b" font-weight="bold" transform="rotate(-90 {base_x0-8:.1f} {base_cy:.1f})">'
-               f'R2 · {formato_mm(r2)} mm</text>')
-    out.append(f'<line x1="{base_cx-visual_r3/2:.1f}" y1="{r3_y:.1f}" '
-               f'x2="{base_cx+visual_r3/2:.1f}" y2="{r3_y:.1f}" stroke="#1f6f8b" stroke-width="3"/>'
-               f'<text x="{base_cx:.1f}" y="{base_y1+18:.1f}" font-size="9" text-anchor="middle" '
-               f'fill="#1f6f8b" font-weight="bold">R3 · {formato_mm(r3)} mm</text>')
-    out.append(f'<line x1="{r4_x:.1f}" y1="{base_cy-visual_r4/2:.1f}" '
-               f'x2="{r4_x:.1f}" y2="{base_cy+visual_r4/2:.1f}" stroke="#1f6f8b" stroke-width="3"/>'
-               f'<text x="{base_x1+8:.1f}" y="{base_cy:.1f}" font-size="9" text-anchor="start" '
-               f'fill="#1f6f8b" font-weight="bold" transform="rotate(-90 {base_x1+8:.1f} {base_cy:.1f})">'
-               f'R4 · {formato_mm(r4)} mm</text>')
-
-    out.append(f'<text x="{bx+12:.1f}" y="{by+38:.1f}" font-size="9" fill="#c0392b">'
-               f'Distancia al pliegue: {formato_mm(off)} mm</text>'
-               f'<text x="{bx+12:.1f}" y="{by+52:.1f}" font-size="8" fill="#777">'
-               f'Ranuras R1–R8 · coincide con T1–T8</text>'
-               f'<text x="{bx+12:.1f}" y="{by+190:.1f}" font-size="8" fill="#777">'
-               f'Corte continuo · centrada sobre su lengüeta</text>')
+    out.append(f'<text x="{pared_derecha_x0:.1f}" y="{by+42:.1f}" font-size="8" font-weight="bold">PARED DERECHA</text>'
+               f'<rect x="{pared_derecha_x0:.1f}" y="{pared_derecha_y0:.1f}" width="{pared_derecha_w:.1f}" height="{pared_derecha_h:.1f}" '
+               'fill="#f2e4c4" stroke="#222" stroke-width="1"/>')
+    escala_derecha = pared_derecha_h / r.Wb
+    ranura_derecha = r_derecha * escala_derecha
+    r7_y = pared_derecha_y0 + pared_derecha_h * 0.25
+    r8_y = pared_derecha_y0 + pared_derecha_h * 0.75
+    ranura_x = pared_derecha_x0 + pared_derecha_w * 0.42
+    out.append(f'<line x1="{ranura_x:.1f}" y1="{r7_y-ranura_derecha/2:.1f}" '
+               f'x2="{ranura_x:.1f}" y2="{r7_y+ranura_derecha/2:.1f}" '
+               'stroke="#1f6f8b" stroke-width="3"/>'
+               f'<line x1="{ranura_x:.1f}" y1="{r8_y-ranura_derecha/2:.1f}" '
+               f'x2="{ranura_x:.1f}" y2="{r8_y+ranura_derecha/2:.1f}" '
+               'stroke="#1f6f8b" stroke-width="3"/>'
+               f'<line x1="{pared_derecha_x0-8:.1f}" y1="{r7_y:.1f}" x2="{pared_derecha_x0-8:.1f}" y2="{r8_y:.1f}" '
+               'stroke="#c0392b" stroke-width="0.7" marker-start="url(#ar)" marker-end="url(#ar)"/>'
+               f'<text x="{pared_derecha_x0-11:.1f}" y="{(r7_y+r8_y)/2:.1f}" font-size="7" fill="#c0392b" '
+               f'text-anchor="middle" transform="rotate(-90 {pared_derecha_x0-11:.1f} {(r7_y+r8_y)/2:.1f})">'
+               f'{formato_mm(separacion_derecha)} mm</text>'
+               f'<text x="{pared_derecha_x0+pared_derecha_w/2:.1f}" y="{pared_derecha_y0+pared_derecha_h+13:.1f}" '
+               f'font-size="8" text-anchor="middle" fill="#1f6f8b">R7–R8 · longitud {formato_mm(r_derecha)} mm</text>'
+               f'<text x="{pared_derecha_x0+pared_derecha_w/2:.1f}" y="{pared_derecha_y0+pared_derecha_h+26:.1f}" '
+               f'font-size="8" text-anchor="middle" fill="#c0392b">Costado {formato_mm(costado_derecho)} mm · al pliegue {formato_mm(off)} mm</text>')
 
     # Leyenda y datos fuera de la cruz.
     ley_x, ley_y = margin, H-detail_h-margin
@@ -1524,7 +1528,7 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         f'<text x="{ley_x+155:.1f}" y="{ley_y+44:.1f}" font-size="9">pliegue</text>',
         f'<line x1="{ley_x+205:.1f}" y1="{ley_y+40:.1f}" x2="{ley_x+248:.1f}" y2="{ley_y+40:.1f}" stroke="#1f6f8b" stroke-width="4"/>',
         f'<text x="{ley_x+255:.1f}" y="{ley_y+44:.1f}" font-size="9">ranura</text>',
-        f'<text x="{ley_x+12:.1f}" y="{ley_y+52:.1f}" font-size="8">T1-T8 · lengüetas de tapa · R1-R8 · ranuras del cuerpo</text>',
+        f'<text x="{ley_x+12:.1f}" y="{ley_y+52:.1f}" font-size="8">R1-R8 · ranuras en las paredes</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+60:.1f}" font-size="9">Medidas en mm, ancho × alto tal como se ven.</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+74:.1f}" font-size="9">Los pliegues coinciden con los bordes de cada panel.</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+94:.1f}" font-size="11" font-weight="bold">DATOS</text>',
