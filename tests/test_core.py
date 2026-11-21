@@ -698,8 +698,11 @@ def test_svg_principal_integra_tapa_externa_con_pestana():
 
     assert "TAPA EXTERNA · pestaña interna" in svg
     assert "Pestaña interna: 15 mm" in svg
-    assert "T1-T8: lengüetas numeradas" in svg
-    assert "R1-R8: ranuras coincidentes" in svg
+    assert "T1-T4:" in svg
+    assert "T5-T8:" in svg
+    assert "Costado" in svg
+    assert "separación" in svg
+    assert "Al pliegue:" in svg
 
 
 def test_svg_no_repite_medidas_fijas_de_120x80x100():

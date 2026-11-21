@@ -526,6 +526,19 @@ def svg_tapa(r: Resultado, escala: float = 1.0) -> str:
                f'{formato_mm(tapa.ancho_top)} mm</text>')
     out.append(f'<text x="{cx:.1f}" y="{dy+10:.1f}" font-size="9" '
                f'text-anchor="middle">TAPA EXTERNA · pestaña interna 15 mm · T1–T8</text>')
+    off = r.encastre_datos["off_encastre"]
+    costado_horizontal = r.Lb * 0.25 - tapa.tabs["T1"] / 2
+    costado_vertical = r.Wb * 0.25 - tapa.tabs["T5"] / 2
+    out.append(
+        f'<text x="{margin:.1f}" y="{H-52:.1f}" font-size="8" '
+        f'text-anchor="start">T1–T4: {formato_mm(tapa.tabs["T1"])} mm</text>'
+        f'<text x="{margin:.1f}" y="{H-40:.1f}" font-size="8" '
+        f'text-anchor="start">T5–T8: {formato_mm(tapa.tabs["T5"])} mm</text>'
+        f'<text x="{margin:.1f}" y="{H-28:.1f}" font-size="8" '
+        f'text-anchor="start">Costado {formato_mm(costado_horizontal)} mm · separación {formato_mm(r.Lb*0.50)} mm</text>'
+        f'<text x="{margin:.1f}" y="{H-16:.1f}" font-size="8" '
+        f'text-anchor="start">Laterales: Costado {formato_mm(costado_vertical)} mm · separación {formato_mm(r.Wb*0.50)} mm · al pliegue {formato_mm(off)} mm</text>'
+    )
     out.append("</svg>")
     return "\n".join(out)
 
@@ -1378,6 +1391,9 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
     datos_x1 = tapa_x+10
     datos_x2 = tapa_x+155
     datos_y = tapa_y+detail_h-66
+    costado_horizontal = r.Lb * 0.25 - tapa.tabs["T1"] / 2
+    costado_vertical = r.Wb * 0.25 - tapa.tabs["T5"] / 2
+    off_tapa = r.encastre_datos["off_encastre"]
     out.append(
         f'<text x="{datos_x1:.1f}" y="{datos_y:.1f}" font-size="7.5" font-weight="bold" fill="#263238">Panel superior</text>'
         f'<text x="{datos_x1:.1f}" y="{datos_y+12:.1f}" font-size="7.5" fill="#263238">Largo: {formato_mm(tapa.largo_top)} mm</text>'
@@ -1385,10 +1401,12 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         f'<text x="{datos_x1:.1f}" y="{datos_y+36:.1f}" font-size="7.5" fill="#263238">Faldón externo: 15 mm</text>'
         f'<text x="{datos_x2:.1f}" y="{datos_y:.1f}" font-size="7.5" font-weight="bold" fill="#263238">Cierre</text>'
         f'<text x="{datos_x2:.1f}" y="{datos_y+12:.1f}" font-size="7.5" fill="#263238">Pestaña interna: 15 mm</text>'
-        f'<text x="{datos_x2:.1f}" y="{datos_y+24:.1f}" font-size="7.5" fill="#263238">T1-T8: lengüetas numeradas</text>'
-        f'<text x="{datos_x2:.1f}" y="{datos_y+36:.1f}" font-size="7.5" fill="#263238">R1-R8: ranuras coincidentes</text>'
+        f'<text x="{datos_x2:.1f}" y="{datos_y+24:.1f}" font-size="7.5" fill="#263238">T1-T4: {formato_mm(tapa.tabs["T1"])} mm · horizontal</text>'
+        f'<text x="{datos_x2:.1f}" y="{datos_y+36:.1f}" font-size="7.5" fill="#263238">T5-T8: {formato_mm(tapa.tabs["T5"])} mm · vertical</text>'
+        f'<text x="{datos_x1:.1f}" y="{datos_y+48:.1f}" font-size="7" fill="#263238">H: Costado {formato_mm(costado_horizontal)} mm · separación {formato_mm(r.Lb*0.50)} mm</text>'
+        f'<text x="{datos_x2:.1f}" y="{datos_y+48:.1f}" font-size="7" fill="#263238">V: Costado {formato_mm(costado_vertical)} mm · separación {formato_mm(r.Wb*0.50)} mm</text>'
         f'<text x="{datos_x1:.1f}" y="{tapa_y+detail_h-10:.1f}" font-size="7.5" fill="#263238">'
-        f'Altura lengüeta: 15 mm · chaflán: 3 mm</text>'
+        f'Al pliegue: {formato_mm(off_tapa)} mm · altura: 15 mm · chaflán: 3 mm</text>'
     )
 
     # Detalle A · lengüeta ampliada.
