@@ -77,6 +77,8 @@ pre{{background:#f6f1e4;padding:12px;white-space:pre-wrap}}.w{{color:#b35c00}}</
 <label>Holgura g (mm, opcional)<input name=g type=number min=0 step=any value="{g}"></label>
 <label>Profundidad d del panal (mm, opcional)<input name=d type=number min=0 step=any value="{d}"></label>
 <label>Flauta (opcional)<select name=flauta><option value="">Automática según peso</option>{flautas}</select></label>
+<label>Ancho disponible de hoja (mm, opcional)<input name=ancho_hoja type=number min=1 step=any value="{ancho_hoja}"></label>
+<label>Alto disponible de hoja (mm, opcional)<input name=alto_hoja type=number min=1 step=any value="{alto_hoja}"></label>
 <button>Generar troquel</button></form>{resultado}"""
 
 
@@ -88,6 +90,7 @@ def pagina(v=None, resultado=""):
     return FORM.format(tipos=opt(nc.TIPO_PRODUCTO, v.get("tipo")), mats=opt(nc.MATERIAL_PRODUCTO, v.get("material")),
                        largo=v.get("largo", ""), ancho=v.get("ancho", ""), alto=v.get("alto", ""),
                        peso=v.get("peso", ""), g=v.get("g", ""), d=v.get("d", ""),
+                       ancho_hoja=v.get("ancho_hoja", ""), alto_hoja=v.get("alto_hoja", ""),
                        flautas=flautas, resultado=resultado)
 
 
@@ -111,7 +114,8 @@ class H(BaseHTTPRequestHandler):
                 return nc.convertir_a_mm(float(valor), unidad)
             r = nc.calcular(nc.Entrada(v["tipo"], v["material"],
                                         convertir(v["largo"]), convertir(v["ancho"]), convertir(v["alto"]),
-                                        peso, v.get("flauta") or None, convertir(v.get("g")), convertir(v.get("d"))), CONFIG)
+                                        peso, v.get("flauta") or None, convertir(v.get("g")), convertir(v.get("d")),
+                                        True, convertir(v.get("ancho_hoja")), convertir(v.get("alto_hoja"))), CONFIG)
             res = nc.svg(r, 0.5)
             if "--debug-coordenadas" in sys.argv:
                 res += "<pre>" + html.escape("\n".join(nc.pasos(r))) + "</pre>"

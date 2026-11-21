@@ -90,6 +90,14 @@
           <input id="d" name="d" type="number" min="0" step="any">
         </div>
         <div class="field">
+          <label for="ancho_hoja">Ancho disponible de hoja (mm, opcional)</label>
+          <input id="ancho_hoja" name="ancho_hoja" type="number" min="1" step="any">
+        </div>
+        <div class="field">
+          <label for="alto_hoja">Alto disponible de hoja (mm, opcional)</label>
+          <input id="alto_hoja" name="alto_hoja" type="number" min="1" step="any">
+        </div>
+        <div class="field">
           <label for="flauta">Flauta (opcional)</label>
           <select id="flauta" name="flauta">
             <option value="">Automática según el peso</option>
@@ -174,7 +182,7 @@
       download.disabled = true;
       const datos = Object.fromEntries(new FormData(form));
       for (const campo of ["largo", "ancho", "alto"]) datos[campo] = Number(datos[campo]);
-      for (const campo of ["peso", "g", "d"]) {
+      for (const campo of ["peso", "g", "d", "ancho_hoja", "alto_hoja"]) {
         if (datos[campo] === "") delete datos[campo];
         else datos[campo] = Number(datos[campo]);
       }
@@ -193,7 +201,14 @@
         download.disabled = false;
         downloadPng.disabled = false;
         downloadPdf.disabled = false;
-        status.textContent = "Troquel generado correctamente.";
+        const advertencias = resultado.medidas.advertencias || [];
+        if (advertencias.length) {
+          status.textContent = `⚠ ${advertencias.join(" ")}`;
+          status.style.color = "#b34d00";
+        } else {
+          status.textContent = "Troquel generado correctamente.";
+          status.style.color = "#347b57";
+        }
       } catch (error) {
         status.textContent = `No se pudo generar el troquel: ${error.message}`;
         preview.innerHTML = '<p class="empty">No hay una vista previa disponible.</p>';

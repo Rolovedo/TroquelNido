@@ -9,6 +9,7 @@ prueba de caída (Fase 4 del documento) y se editan en config.json.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
+from math import sqrt
 
 # ----------------------------------------------------------------- tablas ---
 # Fragilidad: 1 baja, 2 media, 3 alta, 4 muy alta
@@ -123,6 +124,8 @@ class Entrada:
     g: float | None = None      # override opcional de holgura
     d: float | None = None      # override opcional de profundidad del panal
     encastre: bool = True       # True = cierre completo; False = modo cruz anterior
+    ancho_hoja: float | None = None  # mm disponibles por el usuario
+    alto_hoja: float | None = None   # mm disponibles por el usuario
 
     def validar(self):
         if self.tipo not in TIPO_PRODUCTO:
@@ -137,6 +140,9 @@ class Entrada:
         for n, v in (("g", self.g), ("d", self.d)):
             if v is not None and v < 0:
                 raise ValueError(f"{n} no puede ser negativo")
+        for n, v in (("ancho_hoja", self.ancho_hoja), ("alto_hoja", self.alto_hoja)):
+            if v is not None and v <= 0:
+                raise ValueError(f"{n} debe ser positiva")
 
 
 @dataclass
@@ -257,11 +263,13 @@ def calcular(e: Entrada, config: Configuracion) -> Resultado:
         shift = resultado_encastre["tab_alto"]
         ancho_total = 2 * shift + 2 * (Hs + Hw) + Lb
         alto_total = 2 * shift + 2 * (Hs + Hw) + Wb
-    caben = (ancho_total <= HOJA_MAX[0] and alto_total <= HOJA_MAX[1]) or \
-            (ancho_total <= HOJA_MAX[1] and alto_total <= HOJA_MAX[0])
+    hoja_w = e.ancho_hoja if e.ancho_hoja is not None else HOJA_MAX[0]
+    hoja_h = e.alto_hoja if e.alto_hoja is not None else HOJA_MAX[1]
+    caben = (ancho_total <= hoja_w and alto_total <= hoja_h) or \
+            (ancho_total <= hoja_h and alto_total <= hoja_w)
     if not caben:
         adv.append(f"El troquel ({ancho_total:.0f}×{alto_total:.0f} mm) no cabe en la hoja "
-                   f"{HOJA_MAX[0]:.0f}×{HOJA_MAX[1]:.0f} mm.")
+                   f"{hoja_w:.0f}×{hoja_h:.0f} mm.")
     resultado = Resultado(e, frag, flauta[0], t, g, d, Lb, Wb, Hw, Hs, tab_w, tab_l,
                           slot_off, ancho_total, alto_total, adv, e.encastre)
     resultado.encastre_datos = resultado_encastre
@@ -485,23 +493,76 @@ def geometria(r: Resultado):
                 ranura=ranura, slot_y=slot_y)
 
 
+def parametros_tira_panal(largo: float, profundidad: float) -> tuple[int, float, float, float]:
+    """Calcula periodo, tramo plano y longitud desarrollada de una tira."""
+    if largo <= 0 or profundidad <= 0:
+        raise ValueError("La longitud y profundidad del panal deben ser positivas")
+    lado = profundidad / sqrt(3)
+    periodo_ideal = 3 * lado
+    n = max(1, round(largo / periodo_ideal))
+    periodo = largo / n
+    tramo_plano = periodo / 2 - lado / 2
+    if tramo_plano < 0:
+        tramo_plano = 0
+    largo_desarrollado = 2 * n * (tramo_plano + lado)
+    return n, periodo, tramo_plano, largo_desarrollado
+
+
+def perfil_tira_panal(n: int, tramo_plano: float, profundidad: float) -> list[tuple[float, float]]:
+    """Devuelve el perfil A de una tira; el perfil B es su espejo."""
+    lado = profundidad / sqrt(3)
+    avance = lado / 2
+    subida = profundidad / 2
+    x = tramo_plano / 2
+    puntos = [(0.0, 0.0), (x, 0.0)]
+    for i in range(n):
+        x += avance
+        puntos.append((x, subida))
+        x += tramo_plano
+        puntos.append((x, subida))
+        x += avance
+        puntos.append((x, 0.0))
+        if i < n - 1:
+            x += tramo_plano
+            puntos.append((x, 0.0))
+    x += tramo_plano / 2
+    puntos.append((x, 0.0))
+    return puntos
+
+
 def tiras_panal(r: Resultado):
-    """Tiras de cartón en zigzag/celda que van entre la 1ª y la 2ª pared."""
+    """Tiras hexagonales del panal, dos perfiles espejo por pared."""
     alto = round(r.Hs, 1)
     largo_trasera_frontal = r.Lb - 2 * r.t
-    largo_lateral = r.Wb - 2 * r.t
+    largo_lateral = r.Wb - 2 * (r.t + r.d)
 
-    def tramo(largo: float) -> tuple[int, float]:
-        n = max(2, round(largo / r.d))
-        return n, largo / n
-
-    n_tf, p_tf = tramo(largo_trasera_frontal)
-    n_lr, p_lr = tramo(largo_lateral)
+    n_tf, p_tf, f_tf, largo_desarrollado_tf = parametros_tira_panal(largo_trasera_frontal, r.d)
+    n_lr, p_lr, f_lr, largo_desarrollado_lr = parametros_tira_panal(largo_lateral, r.d)
     return [
-        {"cantidad": 2, "largo": round(largo_trasera_frontal, 1), "alto": alto,
-         "profundidad": r.d, "n_tramos": n_tf, "tramo": p_tf},
-        {"cantidad": 2, "largo": round(largo_lateral, 1), "alto": alto,
-         "profundidad": r.d, "n_tramos": n_lr, "tramo": p_lr},
+        {
+            "cantidad": 4,
+            "tipo": "frontal/trasera",
+            "largo": round(largo_trasera_frontal, 2),
+            "largo_desarrollado": round(largo_desarrollado_tf, 2),
+            "alto": alto,
+            "profundidad": r.d,
+            "n_tramos": n_tf,
+            "periodo": p_tf,
+            "tramo": p_tf,
+            "tramo_plano": f_tf,
+        },
+        {
+            "cantidad": 4,
+            "tipo": "laterales",
+            "largo": round(largo_lateral, 2),
+            "largo_desarrollado": round(largo_desarrollado_lr, 2),
+            "alto": alto,
+            "profundidad": r.d,
+            "n_tramos": n_lr,
+            "periodo": p_lr,
+            "tramo": p_lr,
+            "tramo_plano": f_lr,
+        },
     ]
 
 
@@ -970,7 +1031,7 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
 
     pan_x, pan_y = W-margin-detail_w, H-detail_h-margin
     out.append(f'<rect x="{pan_x:.1f}" y="{pan_y:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
-               f'<text x="{pan_x+12:.1f}" y="{pan_y+18:.1f}" font-size="11" font-weight="bold">PANAL · 4 TIRAS</text>')
+               f'<text x="{pan_x+12:.1f}" y="{pan_y+18:.1f}" font-size="11" font-weight="bold">PANAL · 8 TIRAS HEXAGONALES</text>')
     tiras = tiras_panal(r)
     tira_tf, tira_lr = tiras
     largo_tf = tira_tf["largo"]
@@ -1017,9 +1078,9 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
     ty = pan_y + 63
     out.append(
         f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="8">'
-        f'<tspan x="{tx:.1f}" dy="0">1 Corta 2 tiras de</tspan>'
+        f'<tspan x="{tx:.1f}" dy="0">1 Corta 4 tiras frontal/trasera de</tspan>'
         f'<tspan x="{tx:.1f}" dy="11">{formato_mm(largo_tf)} × {formato_mm(alto_tf)} mm</tspan>'
-        f'<tspan x="{tx:.1f}" dy="11">y 2 tiras de {formato_mm(largo_lr)} ×</tspan>'
+        f'<tspan x="{tx:.1f}" dy="11">y 4 tiras laterales de {formato_mm(largo_lr)} ×</tspan>'
         f'<tspan x="{tx:.1f}" dy="11">{formato_mm(alto_lr)} mm.</tspan>'
         f'<tspan x="{tx:.1f}" dy="13">2 Marca cada {formato_mm(p_tf)} mm.</tspan>'
         f'<tspan x="{tx:.1f}" dy="11">Lateral: {formato_mm(p_lr)} mm</tspan>'

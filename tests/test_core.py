@@ -57,11 +57,74 @@ def test_tiras_panal_usan_tramos_enteros_distintos():
 
     for tira in tiras:
         largo = tira["largo"]
-        n = max(2, round(largo / tira["profundidad"]))
-        assert tira["n_tramos"] == n
-        assert tira["tramo"] == pytest.approx(largo / n)
+        n = tira["n_tramos"]
+        assert tira["periodo"] == pytest.approx(largo / n)
 
     assert tiras[0]["largo"] != tiras[1]["largo"] or tiras[0]["n_tramos"] != tiras[1]["n_tramos"]
+
+
+def test_panal_hexagonal_referencia_120x80x100():
+    resultado = nc.calcular(
+        nc.Entrada("cerámica / taza", "cerámica", 120, 80, 100, 0.4, "E"),
+        CONFIG,
+    )
+    tiras = nc.tiras_panal(resultado)
+    frontal = tiras[0]
+    lateral = tiras[1]
+
+    assert resultado.Lb == pytest.approx(172)
+    assert resultado.Wb == pytest.approx(132)
+    assert resultado.Hw == pytest.approx(152)
+    assert resultado.Hs == pytest.approx(149)
+    assert resultado.ancho_total == pytest.approx(804)
+    assert resultado.alto_total == pytest.approx(764)
+    assert frontal["cantidad"] == 4
+    assert frontal["n_tramos"] == 7
+    assert frontal["periodo"] == pytest.approx(169 / 7, rel=1e-3)
+    assert frontal["tramo_plano"] == pytest.approx(169 / 14 - 4.330127, rel=1e-3)
+    assert frontal["largo_desarrollado"] == pytest.approx(229.62, rel=1e-2)
+    assert lateral["cantidad"] == 4
+    assert lateral["n_tramos"] == 4
+    assert lateral["periodo"] == pytest.approx(99 / 4, rel=1e-3)
+    assert lateral["tramo_plano"] == pytest.approx(99 / 8 - 4.330127, rel=1e-3)
+    assert lateral["largo_desarrollado"] == pytest.approx(133.64, rel=1e-2)
+
+
+def test_perfil_panal_es_simetrico_y_tiene_pliegues():
+    perfil = nc.perfil_tira_panal(7, 7.741, 15)
+
+    assert perfil[0] == (0.0, 0.0)
+    assert perfil[-1][1] == 0.0
+    assert max(z for _, z in perfil) == pytest.approx(7.5)
+    assert len(perfil) >= 22
+
+
+def test_hoja_disponible_personalizada_solo_advierte():
+    resultado = nc.calcular(
+        nc.Entrada(
+            "cerámica / taza",
+            "cerámica",
+            120,
+            80,
+            100,
+            peso_kg=0.4,
+            flauta="E",
+            ancho_hoja=700,
+            alto_hoja=700,
+        ),
+        CONFIG,
+    )
+
+    assert resultado.ancho_total == pytest.approx(804)
+    assert resultado.alto_total == pytest.approx(764)
+    assert any("700×700 mm" in advertencia for advertencia in resultado.advertencias)
+
+
+def test_la_vista_web_muestra_las_advertencias_de_resultado():
+    web = open("web/index.html", "r", encoding="utf-8").read()
+
+    assert "resultado.medidas.advertencias" in web
+    assert 'status.textContent = `⚠ ${advertencias.join(" ")}`' in web
 
 
 @pytest.mark.parametrize(("largo", "ancho", "alto"), [
@@ -269,7 +332,7 @@ def test_svg_no_muestra_cotas_antiguas():
     assert "DETALLE B · ranura ampliada" in svg
     assert "LEYENDA Y DATOS" in svg
     assert "DATOS" in svg
-    assert "PANAL · 4 TIRAS" in svg
+    assert "PANAL · 8 TIRAS HEXAGONALES" in svg
     assert "Profundidad d =" in svg
     assert "<circle" not in svg
     assert "ORDEN DE TRAZADO" not in svg

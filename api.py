@@ -28,6 +28,8 @@ class TroquelRequest(BaseModel):
     g: float | None = None
     d: float | None = None
     flauta: str | None = None
+    ancho_hoja: float | None = None
+    alto_hoja: float | None = None
     encastre: bool = True
     debug_coordenadas: bool = False
 
@@ -45,6 +47,8 @@ def crear_entrada(request: TroquelRequest) -> nc.Entrada:
         d=convertir(request.d),
         flauta=request.flauta,
         encastre=request.encastre,
+        ancho_hoja=convertir(request.ancho_hoja),
+        alto_hoja=convertir(request.alto_hoja),
     )
 
 
@@ -77,6 +81,10 @@ def troquel(request: TroquelRequest) -> dict:
             "alto_solapa": resultado.Hs,
             "ancho_total": resultado.ancho_total,
             "alto_total": resultado.alto_total,
+            "hoja_disponible": {
+                "ancho": resultado.entrada.ancho_hoja,
+                "alto": resultado.entrada.alto_hoja,
+            },
             "advertencias": resultado.advertencias,
         },
         "svg": nc.svg(resultado),
