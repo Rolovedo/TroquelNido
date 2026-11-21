@@ -361,6 +361,9 @@ def test_svg_no_muestra_cotas_antiguas():
     assert "764.0" not in svg
     assert "804.0" not in svg
     assert "172.0" not in svg or "T3" not in svg
+    assert ">100 mm</text>" not in svg
+    assert ">16.5<" not in svg
+    assert ">18.0<" not in svg
     assert "DETALLE A · lengüeta ampliada" in svg
     assert "DETALLE B · ranura ampliada" in svg
     assert "LEYENDA Y DATOS" in svg

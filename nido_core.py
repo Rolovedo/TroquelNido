@@ -1265,19 +1265,6 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
 
     # Cotas directas sobre la cruz.
     d = r.encastre_datos
-    top_y = tr((g["back_cx"], g["yT"]-12))[1]
-    tx1, tx2 = tr((g["back_left"], g["yT"]-12))[0], tr((g["back_right"], g["yT"]-12))[0]
-    out.append(f'<line x1="{tx1:.1f}" y1="{top_y:.1f}" x2="{tx2:.1f}" y2="{top_y:.1f}" '
-               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
-               f'<text x="{(tx1+tx2)/2:.1f}" y="{top_y-4:.1f}" font-size="9" text-anchor="middle" fill="#c0392b">'
-               f'{formato_mm(r.t+r.d)}</text>')
-    lx = tr((g["xParedIzq"]-r.Hw/2, g["left_cy"]))[0]
-    ly1, ly2 = tr((g["xParedIzq"], g["left_top"]))[1], tr((g["xParedIzq"], g["left_bottom"]))[1]
-    out.append(f'<line x1="{lx:.1f}" y1="{ly1:.1f}" x2="{lx:.1f}" y2="{ly2:.1f}" '
-               'stroke="#c0392b" stroke-width="0.8" marker-start="url(#ar)" marker-end="url(#ar)"/>'
-               f'<text x="{lx-4:.1f}" y="{(ly1+ly2)/2:.1f}" font-size="9" fill="#c0392b" '
-               f'text-anchor="middle" transform="rotate(-90 {lx-4:.1f} {(ly1+ly2)/2:.1f})">'
-               f'{formato_mm(2*r.t+r.d)}</text>')
     # Registro y dibujo de cotas.
     cotas: list[Cota] = []
     cotas.append(Cota(r.Lb, (g["xB0"], g["yB0"]), (g["xB1"], g["yB0"]), 1))
@@ -1624,10 +1611,6 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         f'</text>'
     )
 
-    scale_x = W-margin-150
-    scale_y = ley_y+detail_h-25
-    out.append(f'<line x1="{scale_x:.1f}" y1="{scale_y:.1f}" x2="{scale_x+100:.1f}" y2="{scale_y:.1f}" stroke="#222" stroke-width="3"/>'
-               f'<text x="{scale_x+50:.1f}" y="{scale_y-6:.1f}" font-size="9" text-anchor="middle">100 mm</text>')
     out.append("</svg>")
     return "\n".join(out)
 
