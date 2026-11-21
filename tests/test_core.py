@@ -66,6 +66,17 @@ def test_tiras_panal_usan_tramos_enteros_distintos():
     assert tiras[0]["largo"] != tiras[1]["largo"] or tiras[0]["n_tramos"] != tiras[1]["n_tramos"]
 
 
+def test_paredes_panal_frontales_usan_dimensiones_calculadas():
+    resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
+    paredes = nc.paredes_panal_frontales(resultado)
+
+    assert len(paredes) == 4
+    assert {pared["etiqueta"] for pared in paredes} == {"F1", "F2", "F3", "F4"}
+    assert all(pared["largo"] == pytest.approx(resultado.Lb - 2 * resultado.t) for pared in paredes)
+    assert all(pared["alto"] == pytest.approx(resultado.Hs) for pared in paredes)
+    assert all(pared["profundidad"] == resultado.d for pared in paredes)
+
+
 def test_panal_hexagonal_referencia_120x80x100():
     resultado = nc.calcular(
         nc.Entrada("cerámica / taza", "cerámica", 120, 80, 100, 0.4, "E"),
@@ -355,6 +366,60 @@ def test_detalle_a_muestra_lado_por_lado_de_la_lengüeta():
     assert f">{nc.formato_mm(datos['tab_trasera'])}</text>" in svg
     assert f">{nc.formato_mm(datos['tab_alto'])}</text>" in svg
     assert f">{nc.formato_mm(datos['tab_chaflan'])}</text>" in svg
+
+
+def test_detalle_a_muestra_f1_f2_frontal_con_medidas_dinamicas():
+    resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
+    svg = nc.svg(resultado)
+    paredes = nc.paredes_panal_frontales(resultado)[:2]
+
+    assert "F1 Frontal A" in svg
+    assert "F2 Frontal B" in svg
+    for pared in paredes:
+        assert f"{nc.formato_mm(pared['largo'])} × {nc.formato_mm(pared['alto'])}" in svg
+    assert "corte largo" not in svg
+
+
+def test_paredes_traseras_f3_f4_se_muestran_a_la_derecha():
+    resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
+    svg = nc.svg(resultado)
+    paredes = nc.paredes_panal_frontales(resultado)[2:]
+
+    assert "F3 Trasera A" in svg
+    assert "F4 Trasera B" in svg
+    for pared in paredes:
+        assert f"{nc.formato_mm(pared['largo'])} × {nc.formato_mm(pared['alto'])}" in svg
+
+
+def test_cuatro_paredes_panal_usan_la_misma_escala_real():
+    resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
+    paredes = nc.paredes_panal_frontales(resultado)
+    svg = nc.svg(resultado)
+    layout = nc.layout_salida(resultado)
+
+    largo_real = resultado.Lb - 2 * resultado.t
+    alto_real = resultado.Hs
+    assert all(pared["largo"] == pytest.approx(largo_real) for pared in paredes)
+    assert all(pared["alto"] == pytest.approx(alto_real) for pared in paredes)
+    assert svg.count('data-escala="1-mm"') == 8
+    assert f'data-largo-mm="{nc.formato_mm(largo_real)}"' in svg
+    assert f'data-alto-mm="{nc.formato_mm(alto_real)}"' in svg
+
+    pared_x = layout["ox"] - largo_real - 145
+    linea_roja_x = layout["ox"] - 55
+    assert pared_x + largo_real < linea_roja_x
+
+
+def test_cuatro_solapas_laterales_se_muestran_en_lados_opuestos():
+    resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
+    svg = nc.svg(resultado)
+    ancho_solapa = resultado.encastre_datos["solapa_lateral_l"]
+
+    assert "S1 Izq. A" in svg
+    assert "S2 Izq. B" in svg
+    assert "S3 Der. A" in svg
+    assert "S4 Der. B" in svg
+    assert svg.count(f'data-largo-mm="{nc.formato_mm(ancho_solapa)}"') >= 4
 
 
 def test_ancho_total_es_la_suma_de_las_columnas():

@@ -81,6 +81,7 @@ def troquel(request: TroquelRequest) -> dict:
             "alto_solapa": resultado.Hs,
             "encastre": resultado.encastre,
             "tiras_panal": nc.tiras_panal(resultado),
+            "paredes_panal_frontales": nc.paredes_panal_frontales(resultado),
             "tapa": {
                 "off_encastre": resultado.encastre_datos.get("off_encastre"),
                 "tab_trasera": resultado.encastre_datos.get("tab_trasera"),

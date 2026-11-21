@@ -585,6 +585,30 @@ def tiras_panal(r: Resultado):
     ]
 
 
+def paredes_panal_frontales(r: Resultado) -> list[dict]:
+    """Devuelve las cuatro paredes destinadas al panal frontal/trasero.
+
+    Las dimensiones se derivan del producto y de las paredes calculadas:
+    ancho = base exterior menos dos espesores; alto = altura interior Hs.
+    """
+    largo = r.Lb - 2 * r.t
+    if largo <= 0:
+        raise ValueError("La pared frontal del panal no puede tener largo negativo")
+    if r.Hs <= 0:
+        raise ValueError("La pared frontal del panal no puede tener alto negativo")
+
+    paredes = []
+    for etiqueta in ("F1", "F2", "F3", "F4"):
+        paredes.append({
+            "etiqueta": etiqueta,
+            "tipo": "frontal/trasera",
+            "largo": round(largo, 2),
+            "alto": round(r.Hs, 2),
+            "profundidad": r.d,
+        })
+    return paredes
+
+
 def layout_salida(r: Resultado) -> dict:
     """Cuadros de texto, círculos y recuadros calculados solo por datos."""
     g = geometria(r)
@@ -840,8 +864,15 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         '<svg xmlns="http://www.w3.org/2000/svg" '
         f'viewBox="0 0 {W:.1f} {H:.1f}" width="{W*escala*2:.0f}" height="{H*escala*2:.0f}" '
         'font-family="Arial, sans-serif">',
-        '<defs><marker id="ar" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" '
-        'markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 z" fill="#c0392b"/></marker></defs>',
+        '<defs>'
+        '<marker id="ar" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" '
+        'markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L6,3 L0,6 z" fill="#c0392b"/></marker>'
+        '<pattern id="patron-panal" width="16" height="16" patternUnits="userSpaceOnUse">'
+        '<line x1="3" y1="0" x2="3" y2="16" stroke="#c55a11" stroke-width="1" stroke-dasharray="5 3"/>'
+        '<line x1="11" y1="0" x2="11" y2="16" stroke="#2e7d4f" stroke-width="1" stroke-dasharray="8 3 2 3"/>'
+        '<line x1="3" y1="8" x2="11" y2="8" stroke="#c55a11" stroke-width="0.7" stroke-dasharray="3 3"/>'
+        '</pattern>'
+        '</defs>',
         '<rect width="100%" height="100%" fill="#ffffff"/>',
         f'<text x="{margin:.1f}" y="24" font-size="14" font-weight="bold">'
         f'NIDO · plano de fabricación · {formato_mm(r.entrada.largo)}×'
@@ -862,6 +893,9 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         y1, y2 = sorted((aa[1], bb[1]))
         out.append(f'<rect x="{x1:.1f}" y="{y1:.1f}" width="{x2-x1:.1f}" '
                    f'height="{y2-y1:.1f}" fill="{colores[nombre]}" stroke="#ffffff" stroke-width="0.5"/>')
+        if nombre in ("pared frontal", "pared trasera"):
+            out.append(f'<rect x="{x1:.1f}" y="{y1:.1f}" width="{x2-x1:.1f}" '
+                       f'height="{y2-y1:.1f}" fill="url(#patron-panal)" opacity="0.82"/>')
         cx, cy = (x1+x2)/2, (y1+y2)/2
         ancho = abs(p2[0]-p1[0])
         alto = abs(p2[1]-p1[1])
@@ -873,6 +907,83 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
             out.append(f'<text x="{cx:.1f}" y="{cy-3:.1f}" font-size="9" text-anchor="middle">'
                        f'<tspan font-weight="bold">{nombre}</tspan>'
                        f'<tspan x="{cx:.1f}" dy="12">{formato_mm(ancho)} × {formato_mm(alto)}</tspan></text>')
+
+    paredes_frontales = paredes_panal_frontales(r)[:2]
+    pared_w = paredes_frontales[0]["largo"]
+    pared_h = paredes_frontales[0]["alto"]
+    pared_x = ox-pared_w-145
+    pared_y = [oy+g["yT"], oy+g["yT"]+pared_h]
+    for indice, (pared, y0) in enumerate(zip(paredes_frontales, pared_y)):
+        etiqueta = f"F{indice+1} Frontal {chr(65+indice)}"
+        out.append(f'<rect x="{pared_x:.1f}" y="{y0:.1f}" width="{pared_w:.1f}" '
+                   f'height="{pared_h:.1f}" fill="#f2e4c4" stroke="#222" stroke-width="1.2" '
+                   f'data-escala="1-mm" data-largo-mm="{formato_mm(pared["largo"])}" '
+                   f'data-alto-mm="{formato_mm(pared["alto"])}"/>')
+        out.append(f'<rect x="{pared_x:.1f}" y="{y0:.1f}" width="{pared_w:.1f}" '
+                   f'height="{pared_h:.1f}" fill="url(#patron-panal)" opacity="0.82"/>')
+        out.append(f'<text x="{pared_x+pared_w/2:.1f}" y="{y0+pared_h/2-3:.1f}" '
+                   f'font-size="9" text-anchor="middle" font-weight="bold">{etiqueta}</text>')
+        out.append(f'<text x="{pared_x+pared_w/2:.1f}" y="{y0+pared_h/2+11:.1f}" '
+                   f'font-size="9" text-anchor="middle">'
+                   f'{formato_mm(pared["largo"])} × {formato_mm(pared["alto"])}</text>')
+
+    paredes_traseras = paredes_panal_frontales(r)[2:]
+    pared_derecha_w = paredes_traseras[0]["largo"]
+    pared_derecha_h = paredes_traseras[0]["alto"]
+    pared_derecha_x = ox+cross_w+55
+    pared_derecha_y = [oy+g["yT"], oy+g["yT"]+pared_derecha_h]
+    for indice, (pared, y0) in enumerate(zip(paredes_traseras, pared_derecha_y)):
+        etiqueta = f"F{indice+3} Trasera {chr(65+indice)}"
+        out.append(f'<rect x="{pared_derecha_x:.1f}" y="{y0:.1f}" width="{pared_derecha_w:.1f}" '
+                   f'height="{pared_derecha_h:.1f}" fill="#f2e4c4" stroke="#222" stroke-width="1.2" '
+                   f'data-escala="1-mm" data-largo-mm="{formato_mm(pared["largo"])}" '
+                   f'data-alto-mm="{formato_mm(pared["alto"])}"/>')
+        out.append(f'<rect x="{pared_derecha_x:.1f}" y="{y0:.1f}" width="{pared_derecha_w:.1f}" '
+                   f'height="{pared_derecha_h:.1f}" fill="url(#patron-panal)" opacity="0.82"/>')
+        out.append(f'<text x="{pared_derecha_x+pared_derecha_w/2:.1f}" y="{y0+pared_derecha_h/2-3:.1f}" '
+                   f'font-size="9" text-anchor="middle" font-weight="bold">{etiqueta}</text>')
+        out.append(f'<text x="{pared_derecha_x+pared_derecha_w/2:.1f}" y="{y0+pared_derecha_h/2+11:.1f}" '
+                   f'font-size="9" text-anchor="middle">'
+                   f'{formato_mm(pared["largo"])} × {formato_mm(pared["alto"])}</text>')
+
+    solapa_lateral_w = r.encastre_datos["solapa_lateral_l"]
+    solapa_lateral_h = r.Hs
+    solapa_izquierda_x = ox-solapa_lateral_w-145
+    solapa_derecha_x = ox+cross_w+55
+    solapa_y = [oy+g["yB0"], oy+g["yB0"]+solapa_lateral_h]
+    for indice, y0 in enumerate(solapa_y):
+        etiqueta = f"S{indice+1} Izq. {chr(65+indice)}"
+        out.append(f'<rect x="{solapa_izquierda_x:.1f}" y="{y0:.1f}" '
+                   f'width="{solapa_lateral_w:.1f}" height="{solapa_lateral_h:.1f}" '
+                   f'fill="#f8eed8" stroke="#222" stroke-width="1.2" '
+                   f'data-escala="1-mm" data-largo-mm="{formato_mm(solapa_lateral_w)}" '
+                   f'data-alto-mm="{formato_mm(solapa_lateral_h)}"/>')
+        out.append(f'<rect x="{solapa_izquierda_x:.1f}" y="{y0:.1f}" '
+                   f'width="{solapa_lateral_w:.1f}" height="{solapa_lateral_h:.1f}" '
+                   f'fill="url(#patron-panal)" opacity="0.82"/>')
+        out.append(f'<text x="{solapa_izquierda_x+solapa_lateral_w/2:.1f}" '
+                   f'y="{y0+solapa_lateral_h/2-3:.1f}" font-size="9" '
+                   f'text-anchor="middle" font-weight="bold">{etiqueta}</text>')
+        out.append(f'<text x="{solapa_izquierda_x+solapa_lateral_w/2:.1f}" '
+                   f'y="{y0+solapa_lateral_h/2+11:.1f}" font-size="9" text-anchor="middle">'
+                   f'{formato_mm(solapa_lateral_w)} × {formato_mm(solapa_lateral_h)}</text>')
+
+    for indice, y0 in enumerate(solapa_y):
+        etiqueta = f"S{indice+3} Der. {chr(65+indice)}"
+        out.append(f'<rect x="{solapa_derecha_x:.1f}" y="{y0:.1f}" '
+                   f'width="{solapa_lateral_w:.1f}" height="{solapa_lateral_h:.1f}" '
+                   f'fill="#f8eed8" stroke="#222" stroke-width="1.2" '
+                   f'data-escala="1-mm" data-largo-mm="{formato_mm(solapa_lateral_w)}" '
+                   f'data-alto-mm="{formato_mm(solapa_lateral_h)}"/>')
+        out.append(f'<rect x="{solapa_derecha_x:.1f}" y="{y0:.1f}" '
+                   f'width="{solapa_lateral_w:.1f}" height="{solapa_lateral_h:.1f}" '
+                   f'fill="url(#patron-panal)" opacity="0.82"/>')
+        out.append(f'<text x="{solapa_derecha_x+solapa_lateral_w/2:.1f}" '
+                   f'y="{y0+solapa_lateral_h/2-3:.1f}" font-size="9" '
+                   f'text-anchor="middle" font-weight="bold">{etiqueta}</text>')
+        out.append(f'<text x="{solapa_derecha_x+solapa_lateral_w/2:.1f}" '
+                   f'y="{y0+solapa_lateral_h/2+11:.1f}" font-size="9" text-anchor="middle">'
+                   f'{formato_mm(solapa_lateral_w)} × {formato_mm(solapa_lateral_h)}</text>')
 
     pts = " ".join(f"{tr(p)[0]:.1f},{tr(p)[1]:.1f}" for p in g["contorno"])
     out.append(f'<polygon points="{pts}" fill="none" stroke="#222" stroke-width="1.8" stroke-linejoin="round"/>')
