@@ -66,6 +66,25 @@ def test_tiras_panal_usan_tramos_enteros_distintos():
     assert tiras[0]["largo"] != tiras[1]["largo"] or tiras[0]["n_tramos"] != tiras[1]["n_tramos"]
 
 
+def test_tiras_laterales_no_usan_medida_de_solapa():
+    resultado = nc.calcular(
+        nc.Entrada("vidrio / cristal", "vidrio", 48, 49, 80, 0.4, "E"),
+        CONFIG,
+    )
+    frontal, lateral = nc.tiras_panal(resultado)
+
+    assert resultado.Lb == pytest.approx(100)
+    assert resultado.Wb == pytest.approx(101)
+    assert resultado.encastre_datos["solapa_lateral_l"] == pytest.approx(65)
+    assert frontal["largo"] == pytest.approx(97)
+    assert lateral["largo"] == pytest.approx(68)
+
+    svg = nc.svg(resultado)
+    assert "Tira izq." in svg
+    assert "Tira der." in svg
+    assert "68 × 129" in svg
+
+
 def test_paredes_panal_frontales_usan_dimensiones_calculadas():
     resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
     paredes = nc.paredes_panal_frontales(resultado)

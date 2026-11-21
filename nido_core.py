@@ -710,8 +710,11 @@ def pasos(r: Resultado) -> list[str]:
         P.append("13) LÍNEAS DE PLIEGUE: sólo hundir, nunca cortar:")
         for (a, b) in g["pliegues"]:
             P.append(f"     de ({f(a[0])}, {f(a[1])}) a ({f(b[0])}, {f(b[1])})")
-        P.append("14) PANAL: usa tiras recalculadas sin ocupar las esquinas ni orejas; "
-                 "trasera/frontal = Lb−2t−2·ancho_oreja y lateral = Wb−2t−2d.")
+        tiras = tiras_panal(r)
+        P.append("14) PANAL: corta las tiras por las medidas calculadas, no por el tamaño de las solapas: "
+                 f"{tiras[0]['cantidad']} frontales/traseras de {f(tiras[0]['largo'])} × "
+                 f"{f(tiras[0]['alto'])} mm y {tiras[1]['cantidad']} laterales de "
+                 f"{f(tiras[1]['largo'])} × {f(tiras[1]['alto'])} mm.")
         P.append("15) ARMADO PREVIO AL ENCASTRE: 1) levanta las 4 paredes; "
                  "2) dobla las orejas hacia adentro; 3) inserta el panal; "
                  "4) dobla las solapas sobre orejas y panal; "
@@ -946,44 +949,45 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
                    f'font-size="9" text-anchor="middle">'
                    f'{formato_mm(pared["largo"])} × {formato_mm(pared["alto"])}</text>')
 
-    solapa_lateral_w = r.encastre_datos["solapa_lateral_l"]
-    solapa_lateral_h = r.Hs
-    solapa_izquierda_x = ox-solapa_lateral_w-145
-    solapa_derecha_x = ox+cross_w+55
-    solapa_y = [oy+g["yB0"], oy+g["yB0"]+solapa_lateral_h]
-    for indice, y0 in enumerate(solapa_y):
-        etiqueta = f"S{indice+1} Izq. {chr(65+indice)}"
-        out.append(f'<rect x="{solapa_izquierda_x:.1f}" y="{y0:.1f}" '
-                   f'width="{solapa_lateral_w:.1f}" height="{solapa_lateral_h:.1f}" '
+    tira_lateral = tiras_panal(r)[1]
+    tira_lateral_w = tira_lateral["largo"]
+    tira_lateral_h = tira_lateral["alto"]
+    tira_izquierda_x = ox-tira_lateral_w-145
+    tira_derecha_x = ox+cross_w+55
+    tira_y = [oy+g["yB0"], oy+g["yB0"]+tira_lateral_h]
+    for indice, y0 in enumerate(tira_y):
+        etiqueta = f"S{indice+1} Tira izq. {chr(65+indice)}"
+        out.append(f'<rect x="{tira_izquierda_x:.1f}" y="{y0:.1f}" '
+                   f'width="{tira_lateral_w:.1f}" height="{tira_lateral_h:.1f}" '
                    f'fill="#f8eed8" stroke="#222" stroke-width="1.2" '
-                   f'data-escala="1-mm" data-largo-mm="{formato_mm(solapa_lateral_w)}" '
-                   f'data-alto-mm="{formato_mm(solapa_lateral_h)}"/>')
-        out.append(f'<rect x="{solapa_izquierda_x:.1f}" y="{y0:.1f}" '
-                   f'width="{solapa_lateral_w:.1f}" height="{solapa_lateral_h:.1f}" '
+                   f'data-escala="1-mm" data-largo-mm="{formato_mm(tira_lateral_w)}" '
+                   f'data-alto-mm="{formato_mm(tira_lateral_h)}"/>')
+        out.append(f'<rect x="{tira_izquierda_x:.1f}" y="{y0:.1f}" '
+                   f'width="{tira_lateral_w:.1f}" height="{tira_lateral_h:.1f}" '
                    f'fill="url(#patron-panal)" opacity="0.82"/>')
-        out.append(f'<text x="{solapa_izquierda_x+solapa_lateral_w/2:.1f}" '
-                   f'y="{y0+solapa_lateral_h/2-3:.1f}" font-size="9" '
+        out.append(f'<text x="{tira_izquierda_x+tira_lateral_w/2:.1f}" '
+                   f'y="{y0+tira_lateral_h/2-3:.1f}" font-size="9" '
                    f'text-anchor="middle" font-weight="bold">{etiqueta}</text>')
-        out.append(f'<text x="{solapa_izquierda_x+solapa_lateral_w/2:.1f}" '
-                   f'y="{y0+solapa_lateral_h/2+11:.1f}" font-size="9" text-anchor="middle">'
-                   f'{formato_mm(solapa_lateral_w)} × {formato_mm(solapa_lateral_h)}</text>')
+        out.append(f'<text x="{tira_izquierda_x+tira_lateral_w/2:.1f}" '
+                   f'y="{y0+tira_lateral_h/2+11:.1f}" font-size="9" text-anchor="middle">'
+                   f'{formato_mm(tira_lateral_w)} × {formato_mm(tira_lateral_h)}</text>')
 
-    for indice, y0 in enumerate(solapa_y):
-        etiqueta = f"S{indice+3} Der. {chr(65+indice)}"
-        out.append(f'<rect x="{solapa_derecha_x:.1f}" y="{y0:.1f}" '
-                   f'width="{solapa_lateral_w:.1f}" height="{solapa_lateral_h:.1f}" '
+    for indice, y0 in enumerate(tira_y):
+        etiqueta = f"S{indice+3} Tira der. {chr(65+indice)}"
+        out.append(f'<rect x="{tira_derecha_x:.1f}" y="{y0:.1f}" '
+                   f'width="{tira_lateral_w:.1f}" height="{tira_lateral_h:.1f}" '
                    f'fill="#f8eed8" stroke="#222" stroke-width="1.2" '
-                   f'data-escala="1-mm" data-largo-mm="{formato_mm(solapa_lateral_w)}" '
-                   f'data-alto-mm="{formato_mm(solapa_lateral_h)}"/>')
-        out.append(f'<rect x="{solapa_derecha_x:.1f}" y="{y0:.1f}" '
-                   f'width="{solapa_lateral_w:.1f}" height="{solapa_lateral_h:.1f}" '
+                   f'data-escala="1-mm" data-largo-mm="{formato_mm(tira_lateral_w)}" '
+                   f'data-alto-mm="{formato_mm(tira_lateral_h)}"/>')
+        out.append(f'<rect x="{tira_derecha_x:.1f}" y="{y0:.1f}" '
+                   f'width="{tira_lateral_w:.1f}" height="{tira_lateral_h:.1f}" '
                    f'fill="url(#patron-panal)" opacity="0.82"/>')
-        out.append(f'<text x="{solapa_derecha_x+solapa_lateral_w/2:.1f}" '
-                   f'y="{y0+solapa_lateral_h/2-3:.1f}" font-size="9" '
+        out.append(f'<text x="{tira_derecha_x+tira_lateral_w/2:.1f}" '
+                   f'y="{y0+tira_lateral_h/2-3:.1f}" font-size="9" '
                    f'text-anchor="middle" font-weight="bold">{etiqueta}</text>')
-        out.append(f'<text x="{solapa_derecha_x+solapa_lateral_w/2:.1f}" '
-                   f'y="{y0+solapa_lateral_h/2+11:.1f}" font-size="9" text-anchor="middle">'
-                   f'{formato_mm(solapa_lateral_w)} × {formato_mm(solapa_lateral_h)}</text>')
+        out.append(f'<text x="{tira_derecha_x+tira_lateral_w/2:.1f}" '
+                   f'y="{y0+tira_lateral_h/2+11:.1f}" font-size="9" text-anchor="middle">'
+                   f'{formato_mm(tira_lateral_w)} × {formato_mm(tira_lateral_h)}</text>')
 
     pts = " ".join(f"{tr(p)[0]:.1f},{tr(p)[1]:.1f}" for p in g["contorno"])
     out.append(f'<polygon points="{pts}" fill="none" stroke="#222" stroke-width="1.8" stroke-linejoin="round"/>')
