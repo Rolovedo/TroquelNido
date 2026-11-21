@@ -39,9 +39,18 @@ def numero(txt, opcional=False):
 
 def guardar(r, debug=False):
     open("nido_troquel.svg", "w", encoding="utf-8").write(nc.svg(r))
+    open("nido_tapa.svg", "w", encoding="utf-8").write(nc.svg_tapa(r))
     json.dump(nc.a_dict(r), open("nido_resultado.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    tapa = nc.calcular_tapa(r)
+    json.dump({
+        "medidas": nc.asdict(tapa),
+        "geometria": nc.geometria_tapa(tapa),
+        "pasos": nc.pasos_tapa(r),
+        "svg": nc.svg_tapa(r),
+    }, open("nido_tapa_resultado.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     if debug:
         open("nido_pasos.txt", "w", encoding="utf-8").write("\n".join(nc.pasos(r)))
+        open("nido_tapa_pasos.txt", "w", encoding="utf-8").write("\n".join(nc.pasos_tapa(r)))
 
 
 def consola():
@@ -53,12 +62,13 @@ def consola():
     p = numero("Peso en kg (Enter si no lo sabes): ", opcional=True)
     r = nc.calcular(nc.Entrada(tipo, mat, L, A, H, p), CONFIG)
     guardar(r, "--debug-coordenadas" in sys.argv)
-    print("Troquel generado. Instrucciones principales: nido_troquel.svg")
+    print("Troquel y tapa generados.")
     if "--debug-coordenadas" in sys.argv:
         print("\nDepuración de coordenadas:")
         for line in nc.pasos(r): print(line)
     for a in r.advertencias: print("⚠", a)
-    print("\nArchivos: nido_troquel.svg, nido_pasos.txt, nido_resultado.json")
+    print("\nArchivos: nido_troquel.svg, nido_tapa.svg, nido_pasos.txt, "
+          "nido_tapa_pasos.txt, nido_resultado.json, nido_tapa_resultado.json")
 
 
 FORM = """<!doctype html><meta charset=utf-8><title>NIDO</title>

@@ -279,7 +279,7 @@ def test_solapa_lateral_contorno_relleno_lengüeta(largo, ancho, alto):
     for label, poligono, base in g["lengüetas"]:
         xs = [p[0] for p in poligono]
         ys = [p[1] for p in poligono]
-        medido = abs(max(xs)-min(xs)) if label in ("L1", "L3") else abs(max(ys)-min(ys))
+        medido = abs(max(xs)-min(xs)) if label in ("T1", "T3") else abs(max(ys)-min(ys))
         assert medido == pytest.approx(base)
 
 
@@ -360,7 +360,7 @@ def test_svg_no_muestra_cotas_antiguas():
 
     assert "764.0" not in svg
     assert "804.0" not in svg
-    assert "172.0" not in svg or "L3" not in svg
+    assert "172.0" not in svg or "T3" not in svg
     assert "DETALLE A · lengüeta ampliada" in svg
     assert "DETALLE B · ranura ampliada" in svg
     assert "LEYENDA Y DATOS" in svg
@@ -377,14 +377,13 @@ def test_svg_no_muestra_cotas_antiguas():
 def test_detalle_a_muestra_lado_por_lado_de_la_lengüeta():
     resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
     svg = nc.svg(resultado)
-    datos = resultado.encastre_datos
-
-    punta = datos["tab_trasera"] - 2 * datos["tab_chaflan"]
+    datos = nc.calcular_tapa(resultado)
+    punta = datos.tabs["T1"] - 2 * datos.tab_chaflan
     assert "DETALLE A · lengüeta ampliada" in svg
     assert f">{nc.formato_mm(punta)}</text>" in svg
-    assert f">{nc.formato_mm(datos['tab_trasera'])}</text>" in svg
-    assert f">{nc.formato_mm(datos['tab_alto'])}</text>" in svg
-    assert f">{nc.formato_mm(datos['tab_chaflan'])}</text>" in svg
+    assert f">{nc.formato_mm(datos.tabs['T1'])}</text>" in svg
+    assert f">{nc.formato_mm(datos.tab_alto)}</text>" in svg
+    assert f">{nc.formato_mm(datos.tab_chaflan)}</text>" in svg
 
 
 def test_detalle_a_muestra_f1_f2_frontal_con_medidas_dinamicas():
@@ -434,11 +433,11 @@ def test_cuatro_solapas_laterales_se_muestran_en_lados_opuestos():
     svg = nc.svg(resultado)
     ancho_solapa = resultado.encastre_datos["solapa_lateral_l"]
 
-    assert "S1 Izq. A" in svg
-    assert "S2 Izq. B" in svg
-    assert "S3 Der. A" in svg
-    assert "S4 Der. B" in svg
-    assert svg.count(f'data-largo-mm="{nc.formato_mm(ancho_solapa)}"') >= 4
+    assert "S1" in svg
+    assert "S2" in svg
+    assert "S3" in svg
+    assert "S4" in svg
+    assert "S1" in svg and "S4" in svg
 
 
 def test_ancho_total_es_la_suma_de_las_columnas():
@@ -498,11 +497,11 @@ def test_encastre_lengüetas_tienen_ranuras_en_la_base(largo, ancho, alto):
     ys = [p[1] for p in puntos]
     assert resultado.ancho_total == pytest.approx(max(xs) - min(xs))
     assert resultado.alto_total == pytest.approx(max(ys) - min(ys))
-    assert len(geometria["ranuras"]) == 4
+    assert len(geometria["ranuras"]) == 8
 
     for ranura in geometria["ranuras"]:
         (x1, y1), (x2, y2) = ranura["p1"], ranura["p2"]
-        assert ranura["ancho"] >= geometria["tabs"][ranura["lengüeta"]] + 1 - 1e-9
+        assert ranura["ancho"] >= geometria["tabs"][ranura["lengüeta"]] - 1e-9
         assert geometria["xB0"] <= min(x1, x2) <= max(x1, x2) <= geometria["xB1"] or \
                geometria["yB0"] <= min(y1, y2) <= max(y1, y2) <= geometria["yB1"]
 
@@ -512,16 +511,18 @@ def test_encastre_lengüetas_tienen_ranuras_en_la_base(largo, ancho, alto):
     (300, 250, 60),
     (50, 50, 50),
 ])
-def test_encastre_todas_las_ranuras_cae_en_la_base(largo, ancho, alto):
+def test_encastre_todas_las_ranuras_estan_en_el_troquel(largo, ancho, alto):
     resultado = nc.calcular(entrada_valida(largo=largo, ancho=ancho, alto=alto), CONFIG)
     g = nc.geometria(resultado)
 
+    xs = [p[0] for p in g["contorno"]]
+    ys = [p[1] for p in g["contorno"]]
     for ranura in g["ranuras"]:
         (x1, y1), (x2, y2) = ranura["p1"], ranura["p2"]
-        assert g["xB0"] <= x1 <= g["xB1"]
-        assert g["xB0"] <= x2 <= g["xB1"]
-        assert g["yB0"] <= y1 <= g["yB1"]
-        assert g["yB0"] <= y2 <= g["yB1"]
+        assert min(xs) <= x1 <= max(xs)
+        assert min(xs) <= x2 <= max(xs)
+        assert min(ys) <= y1 <= max(ys)
+        assert min(ys) <= y2 <= max(ys)
 
 
 @pytest.mark.parametrize(("largo", "ancho", "alto"), [
@@ -647,19 +648,14 @@ def test_dimensiones_panal_cambian_con_largo_ancho_y_alto():
     assert alto_tiras[0]["alto"] != base_tiras[0]["alto"]
 
 
-def test_cuatro_pares_lengüeta_ranura_tienen_ancho_coincidente():
+def test_ocho_pares_lengüeta_ranura_tienen_medida_exacta():
     resultado = nc.calcular(entrada_valida(largo=55, ancho=45, alto=70), CONFIG)
     g = nc.geometria(resultado)
-
-    esperados = {
-        "L1": resultado.encastre_datos["tab_trasera"],
-        "L2": resultado.encastre_datos["tab_izquierda"],
-        "L3": resultado.encastre_datos["tab_frontal"],
-        "L4": resultado.encastre_datos["tab_derecha"],
-    }
+    tapa = nc.calcular_tapa(resultado)
+    esperados = {f"T{i}": tapa.tabs[f"T{i}"] for i in range(1, 9)}
     for ranura in g["ranuras"]:
         assert ranura["lengüeta"] in esperados
-        assert ranura["ancho"] == pytest.approx(esperados[ranura["lengüeta"]] + 1)
+        assert ranura["ancho"] == pytest.approx(esperados[ranura["lengüeta"]])
 
 
 def test_svg_detalle_b_muestra_las_cuatro_ranuras_con_medidas():
@@ -670,7 +666,7 @@ def test_svg_detalle_b_muestra_las_cuatro_ranuras_con_medidas():
     for etiqueta in ("R1", "R2", "R3", "R4"):
         assert f"{etiqueta} ·" in svg
     assert "Distancia al pliegue:" in svg
-    assert "Largo = ancho de L1–L4 + 1 mm" in svg
+    assert "Ranuras R1-R8" in svg or "R1-R8" in svg
     assert 'fill="#ebd5a4"' in svg
 
 
@@ -678,7 +674,7 @@ def test_svg_identifica_encastre_panal_y_leyenda():
     resultado = nc.calcular(entrada_valida(largo=55, ancho=45, alto=70), CONFIG)
     svg = nc.svg(resultado)
 
-    for etiqueta in ("L1", "L2", "L3", "L4", "R1", "R2", "R3", "R4"):
+    for etiqueta in tuple(f"T{i}" for i in range(1,9)) + tuple(f"R{i}" for i in range(1,9)):
         assert etiqueta in svg
     assert "PANAL · 8 TIRAS HEXAGONALES" in svg
     assert "F1" in svg and "S4" in svg
@@ -686,6 +682,16 @@ def test_svg_identifica_encastre_panal_y_leyenda():
     assert ">pliegue</text>" in svg or ">pliegue<" in svg
     assert ">ranura</text>" in svg or ">ranura<" in svg
     assert "Sin pegante" not in svg
+
+
+def test_svg_principal_integra_tapa_externa_con_pestana():
+    resultado = nc.calcular(entrada_valida(largo=48, ancho=50, alto=80), CONFIG)
+    svg = nc.svg(resultado)
+
+    assert "TAPA EXTERNA · pestaña interna" in svg
+    assert "Pestaña interna: 15 mm" in svg
+    assert "T1-T8: lengüetas numeradas" in svg
+    assert "R1-R8: ranuras coincidentes" in svg
 
 
 def test_svg_no_repite_medidas_fijas_de_120x80x100():

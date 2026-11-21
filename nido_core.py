@@ -167,6 +167,21 @@ class Resultado:
     encastre_datos: dict = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class TapaResultado:
+    largo_top: float
+    ancho_top: float
+    alto_faldon: float
+    alto_interno: float
+    tab_alto: float
+    tab_chaflan: float
+    tabs: dict[str, float]
+    tipo: str = "externa"
+    ajuste: str = "pestaña-interna"
+    ancho_total: float = 0.0
+    alto_total: float = 0.0
+
+
 def calcular(e: Entrada, config: Configuracion) -> Resultado:
     e.validar()
     frag = max(TIPO_PRODUCTO[e.tipo], MATERIAL_PRODUCTO[e.material])
@@ -276,6 +291,245 @@ def calcular(e: Entrada, config: Configuracion) -> Resultado:
     return resultado
 
 
+def calcular_tapa(r: Resultado) -> TapaResultado:
+    """Tapa externa con pestaña interna y lengüetas T1–T8."""
+    largo_top = r.Lb
+    ancho_top = r.Wb
+    alto_faldon = 15.0
+    alto_interno = 15.0
+    tab_alto = 15.0
+    tab_chaflan = 3.0
+
+    def ancho_lengüeta(lado: float) -> float:
+        disponible_por_tab = max(0.0, lado / 2 - 2 * tab_chaflan)
+        ancho = min(max(0.20 * lado, 25.0), 50.0)
+        return min(ancho, disponible_por_tab)
+
+    ancho_horizontal = ancho_lengüeta(largo_top)
+    ancho_vertical = ancho_lengüeta(ancho_top)
+    tabs = {
+        "T1": ancho_horizontal, "T2": ancho_horizontal,
+        "T3": ancho_horizontal, "T4": ancho_horizontal,
+        "T5": ancho_vertical, "T6": ancho_vertical,
+        "T7": ancho_vertical, "T8": ancho_vertical,
+    }
+    return TapaResultado(
+        largo_top=largo_top,
+        ancho_top=ancho_top,
+        alto_faldon=alto_faldon,
+        alto_interno=alto_interno,
+        tab_alto=tab_alto,
+        tab_chaflan=tab_chaflan,
+        tabs=tabs,
+        ancho_total=largo_top + 2 * (alto_faldon + alto_interno) + 2 * tab_alto,
+        alto_total=ancho_top + 2 * (alto_faldon + alto_interno) + 2 * tab_alto,
+    )
+
+
+def geometria_tapa(tapa: TapaResultado) -> dict:
+    """Geometría plana de la tapa externa con pestaña interna."""
+    x0 = tapa.tab_alto + tapa.alto_faldon
+    y0 = tapa.tab_alto + tapa.alto_faldon
+    x1 = x0 + tapa.largo_top
+    y1 = y0 + tapa.ancho_top
+    ch = tapa.tab_chaflan
+    t1, t2 = tapa.tabs["T1"], tapa.tabs["T2"]
+    t3, t4 = tapa.tabs["T3"], tapa.tabs["T4"]
+    t5, t6 = tapa.tabs["T5"], tapa.tabs["T6"]
+    t7, t8 = tapa.tabs["T7"], tapa.tabs["T8"]
+
+    corte_y_top = y0 - tapa.alto_faldon
+    corte_y_bottom = y1 + tapa.alto_faldon
+    corte_x_left = x0 - tapa.alto_faldon
+    corte_x_right = x1 + tapa.alto_faldon
+
+    top1a = x0 + (tapa.largo_top - t1 - t2) * 0.25
+    top1b = top1a + t1
+    top2a = x1 - (tapa.largo_top - t1 - t2) * 0.25 - t2
+    top2b = top2a + t2
+    bottom1a = x0 + (tapa.largo_top - t3 - t4) * 0.25
+    bottom1b = bottom1a + t3
+    bottom2a = x1 - (tapa.largo_top - t3 - t4) * 0.25 - t4
+    bottom2b = bottom2a + t4
+    left1a = y0 + (tapa.ancho_top - t5 - t6) * 0.25
+    left1b = left1a + t5
+    left2a = y1 - (tapa.ancho_top - t5 - t6) * 0.25 - t6
+    left2b = left2a + t6
+    right1a = y0 + (tapa.ancho_top - t7 - t8) * 0.25
+    right1b = right1a + t7
+    right2a = y1 - (tapa.ancho_top - t7 - t8) * 0.25 - t8
+    right2b = right2a + t8
+
+    contorno = [
+        (x0, corte_y_top),
+        (top1a, corte_y_top),
+        (top1a, corte_y_top-tapa.tab_alto),
+        (top1b, corte_y_top-tapa.tab_alto),
+        (top1b, corte_y_top),
+        (top2a, corte_y_top),
+        (top2a, corte_y_top-tapa.tab_alto),
+        (top2b, corte_y_top-tapa.tab_alto),
+        (top2b, corte_y_top),
+        (x1, corte_y_top),
+        (x1, y0),
+        (corte_x_right, y0),
+        (corte_x_right+tapa.tab_alto, right1a),
+        (corte_x_right+tapa.tab_alto, right1b),
+        (corte_x_right, right1b),
+        (corte_x_right, right2a),
+        (corte_x_right+tapa.tab_alto, right2a),
+        (corte_x_right+tapa.tab_alto, right2b),
+        (corte_x_right, right2b),
+        (corte_x_right, y1),
+        (x1, y1),
+        (x1, corte_y_bottom),
+        (bottom2b, corte_y_bottom),
+        (bottom2b, corte_y_bottom+tapa.tab_alto),
+        (bottom2a, corte_y_bottom+tapa.tab_alto),
+        (bottom2a, corte_y_bottom),
+        (bottom1b, corte_y_bottom),
+        (bottom1b, corte_y_bottom+tapa.tab_alto),
+        (bottom1a, corte_y_bottom+tapa.tab_alto),
+        (bottom1a, corte_y_bottom),
+        (x0, corte_y_bottom),
+        (x0, y1),
+        (corte_x_left, y1),
+        (corte_x_left-tapa.tab_alto, left2b),
+        (corte_x_left-tapa.tab_alto, left2a),
+        (corte_x_left, left2a),
+        (corte_x_left, left1b),
+        (corte_x_left-tapa.tab_alto, left1b),
+        (corte_x_left-tapa.tab_alto, left1a),
+        (corte_x_left, left1a),
+        (corte_x_left, y0),
+        (x0, y0),
+    ]
+
+    lengüetas = [
+        ("T1", [(top1a, corte_y_top), (top1a, corte_y_top-tapa.tab_alto),
+                (top1b, corte_y_top-tapa.tab_alto), (top1b, corte_y_top)], t1),
+        ("T2", [(top2a, corte_y_top), (top2a, corte_y_top-tapa.tab_alto),
+                (top2b, corte_y_top-tapa.tab_alto), (top2b, corte_y_top)], t2),
+        ("T3", [(bottom1a, corte_y_bottom), (bottom1a, corte_y_bottom+tapa.tab_alto),
+                (bottom1b, corte_y_bottom+tapa.tab_alto), (bottom1b, corte_y_bottom)], t3),
+        ("T4", [(bottom2a, corte_y_bottom), (bottom2a, corte_y_bottom+tapa.tab_alto),
+                (bottom2b, corte_y_bottom+tapa.tab_alto), (bottom2b, corte_y_bottom)], t4),
+        ("T5", [(corte_x_left, left1a), (corte_x_left-tapa.tab_alto, left1a),
+                (corte_x_left-tapa.tab_alto, left1b), (corte_x_left, left1b)], t5),
+        ("T6", [(corte_x_left, left2a), (corte_x_left-tapa.tab_alto, left2a),
+                (corte_x_left-tapa.tab_alto, left2b), (corte_x_left, left2b)], t6),
+        ("T7", [(corte_x_right, right1a), (corte_x_right+tapa.tab_alto, right1a),
+                (corte_x_right+tapa.tab_alto, right1b), (corte_x_right, right1b)], t7),
+        ("T8", [(corte_x_right, right2a), (corte_x_right+tapa.tab_alto, right2a),
+                (corte_x_right+tapa.tab_alto, right2b), (corte_x_right, right2b)], t8),
+    ]
+
+    pliegues = [
+        ((x0, y0), (x1, y0)),
+        ((x0, y1), (x1, y1)),
+        ((x0, y0), (x0, y1)),
+        ((x1, y0), (x1, y1)),
+        ((x0-tapa.alto_faldon, y0), (x0-tapa.alto_faldon, y1)),
+        ((x1+tapa.alto_faldon, y0), (x1+tapa.alto_faldon, y1)),
+    ]
+    paneles = [
+        ("SUPERIOR", (x0, y0), (x1, y1)),
+        ("faldón trasero", (x0, y0-tapa.alto_faldon), (x1, y0)),
+        ("faldón frontal", (x0, y1), (x1, y1+tapa.alto_faldon)),
+        ("faldón izquierdo", (x0-tapa.alto_faldon, y0), (x0, y1)),
+        ("faldón derecho", (x1, y0), (x1+tapa.alto_faldon, y1)),
+        ("pestaña interna trasera", (x0, y0-tapa.alto_faldon-tapa.alto_interno),
+         (x1, y0-tapa.alto_faldon)),
+        ("pestaña interna frontal", (x0, y1+tapa.alto_faldon),
+         (x1, y1+tapa.alto_faldon+tapa.alto_interno)),
+        ("pestaña interna izquierda", (x0-tapa.alto_faldon-tapa.alto_interno, y0),
+         (x0-tapa.alto_faldon, y1)),
+        ("pestaña interna derecha", (x1+tapa.alto_faldon, y0),
+         (x1+tapa.alto_faldon+tapa.alto_interno, y1)),
+    ]
+    xs = [p[0] for p in contorno]
+    ys = [p[1] for p in contorno]
+    return {
+        "contorno": contorno,
+        "pliegues": pliegues,
+        "ranuras": [],
+        "paneles": paneles,
+        "lengüetas": lengüetas,
+        "x0": x0, "x1": x1, "y0": y0, "y1": y1,
+        "medidas": {
+            "largo_superior": tapa.largo_top,
+            "ancho_superior": tapa.ancho_top,
+            "alto_faldon": tapa.alto_faldon,
+            "alto_interno": tapa.alto_interno,
+            "tabs": tapa.tabs,
+            "tab_alto": tapa.tab_alto,
+            "tab_chaflan": tapa.tab_chaflan,
+        },
+        "ancho_total": max(xs)-min(xs),
+        "alto_total": max(ys)-min(ys),
+    }
+
+
+def pasos_tapa(r: Resultado) -> list[str]:
+    tapa = calcular_tapa(r)
+    g = geometria_tapa(tapa)
+    f = lambda v: f"{v:.1f}"
+    P = [
+        f"1) Panel superior de la tapa: ({f(g['x0'])}, {f(g['y0'])}) a "
+        f"({f(g['x1'])}, {f(g['y1'])}); mide {f(tapa.largo_top)} × {f(tapa.ancho_top)} mm.",
+        f"2) Dobla cuatro faldones externos de {f(tapa.alto_faldon)} mm.",
+        f"3) Dobla hacia adentro una pestaña completa de {f(tapa.alto_interno)} mm por lado.",
+        "4) Corta ocho lengüetas T1–T8 en los bordes exteriores.",
+    ]
+    for label, poligono, ancho in g["lengüetas"]:
+        p1, p2 = poligono[0], poligono[2]
+        P.append(f"   {label}: de ({f(p1[0])}, {f(p1[1])}) a ({f(p2[0])}, {f(p2[1])}); "
+                 f"base {f(ancho)} mm y alto {f(tapa.tab_alto)} mm.")
+    P.append("5) Corta R1–R8 en las cuatro paredes del cuerpo.")
+    P.append("6) Encaja T1↔R1, T2↔R2, T3↔R3, T4↔R4, T5↔R5, "
+             "T6↔R6, T7↔R7 y T8↔R8.")
+    P.append("7) Cada lengüeta coincide exactamente con el ancho de su ranura.")
+    return P
+
+
+def svg_tapa(r: Resultado, escala: float = 1.0) -> str:
+    tapa = calcular_tapa(r)
+    g = geometria_tapa(tapa)
+    xs = [p[0] for p in g["contorno"]]
+    ys = [p[1] for p in g["contorno"]]
+    xmin, xmax = min(xs), max(xs)
+    ymin, ymax = min(ys), max(ys)
+    margin = 20
+    W = max(1, xmax-xmin+2*margin)
+    H = max(1, ymax-ymin+2*margin)
+    dx, dy = margin-xmin, margin-ymin
+
+    out = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W:.1f} {H:.1f}" '
+        f'width="{W*escala:.1f}mm" height="{H*escala:.1f}mm">',
+        '<rect x="0" y="0" width="100%" height="100%" fill="#fff"/>',
+    ]
+    puntos = " ".join(f"{x+dx:.1f},{y+dy:.1f}" for x, y in g["contorno"])
+    out.append(f'<polygon points="{puntos}" fill="#f4efe2" stroke="#111" stroke-width="1.5"/>')
+    for a, b in g["pliegues"]:
+        out.append(f'<line x1="{a[0]+dx:.1f}" y1="{a[1]+dy:.1f}" '
+                   f'x2="{b[0]+dx:.1f}" y2="{b[1]+dy:.1f}" '
+                   'stroke="#2e7d4f" stroke-width="1" stroke-dasharray="5 4"/>')
+    for label, poligono, ancho in g["lengüetas"]:
+        pts = " ".join(f"{x+dx:.1f},{y+dy:.1f}" for x, y in poligono)
+        out.append(f'<polygon points="{pts}" fill="#fff" fill-opacity=".35" '
+                   'stroke="#111" stroke-width="1"/>')
+    cx = (g["x0"]+g["x1"])/2+dx
+    cy = (g["y0"]+g["y1"])/2+dy
+    out.append(f'<text x="{cx:.1f}" y="{cy:.1f}" font-size="9" '
+               f'text-anchor="middle">SUPERIOR {formato_mm(tapa.largo_top)} × '
+               f'{formato_mm(tapa.ancho_top)} mm</text>')
+    out.append(f'<text x="{cx:.1f}" y="{dy+10:.1f}" font-size="9" '
+               f'text-anchor="middle">TAPA EXTERNA · pestaña interna 15 mm · T1–T8</text>')
+    out.append("</svg>")
+    return "\n".join(out)
+
+
 # ------------------------------------------------------------- geometría ----
 def geometria(r: Resultado):
     """Coordenadas en mm. Origen (0,0) = esquina superior izquierda de la hoja
@@ -283,11 +537,11 @@ def geometria(r: Resultado):
     if r.encastre:
         d = r.encastre_datos
         tab_l = d["tab_alto"]
-        chaflan = d["tab_chaflan"]
-        tab_t = d["tab_trasera"]
-        tab_f = d["tab_frontal"]
-        tab_i = d["tab_izquierda"]
-        tab_derecha = d["tab_derecha"]
+        chaflan = 0.0
+        tab_t = 0.0
+        tab_f = 0.0
+        tab_i = 0.0
+        tab_derecha = 0.0
         flap_t = d["solapa_trasera_l"]
         flap_f = d["solapa_frontal_l"]
         flap_l = d["solapa_lateral_l"]
@@ -387,23 +641,50 @@ def geometria(r: Resultado):
             ((xSolapaDer, right_top), (xSolapaDer, right_bottom)),
         ]
 
+        tapa_actual = calcular_tapa(r)
+        ancho_horizontal = tapa_actual.tabs["T1"]
+        ancho_vertical = tapa_actual.tabs["T5"]
+        back1 = xB0 + r.Lb * 0.25
+        back2 = xB0 + r.Lb * 0.75
+        front1 = xB0 + r.Lb * 0.25
+        front2 = xB0 + r.Lb * 0.75
+        left1 = yB0 + r.Wb * 0.25
+        left2 = yB0 + r.Wb * 0.75
+        right1 = yB0 + r.Wb * 0.25
+        right2 = yB0 + r.Wb * 0.75
         ranuras = [
             {"id": "R1", "orientacion": "horizontal",
-             "p1": (back_cx - (tab_t + 1) / 2, yB0 + off),
-             "p2": (back_cx + (tab_t + 1) / 2, yB0 + off),
-             "lengüeta": "L1", "ancho": tab_t + 1},
-            {"id": "R2", "orientacion": "vertical",
-             "p1": (xB0 + off, left_cy - (tab_i + 1) / 2),
-             "p2": (xB0 + off, left_cy + (tab_i + 1) / 2),
-             "lengüeta": "L2", "ancho": tab_i + 1},
+             "p1": (back1-ancho_horizontal/2, ySw+off),
+             "p2": (back1+ancho_horizontal/2, ySw+off),
+             "lengüeta": "T1", "ancho": ancho_horizontal},
+            {"id": "R2", "orientacion": "horizontal",
+             "p1": (back2-ancho_horizontal/2, ySw+off),
+             "p2": (back2+ancho_horizontal/2, ySw+off),
+             "lengüeta": "T2", "ancho": ancho_horizontal},
             {"id": "R3", "orientacion": "horizontal",
-             "p1": (front_cx - (tab_f + 1) / 2, yB1 - off),
-             "p2": (front_cx + (tab_f + 1) / 2, yB1 - off),
-             "lengüeta": "L3", "ancho": tab_f + 1},
-            {"id": "R4", "orientacion": "vertical",
-             "p1": (xB1 - off, right_cy - (tab_derecha + 1) / 2),
-             "p2": (xB1 - off, right_cy + (tab_derecha + 1) / 2),
-             "lengüeta": "L4", "ancho": tab_derecha + 1},
+             "p1": (front1-ancho_horizontal/2, yFw-off),
+             "p2": (front1+ancho_horizontal/2, yFw-off),
+             "lengüeta": "T3", "ancho": ancho_horizontal},
+            {"id": "R4", "orientacion": "horizontal",
+             "p1": (front2-ancho_horizontal/2, yFw-off),
+             "p2": (front2+ancho_horizontal/2, yFw-off),
+             "lengüeta": "T4", "ancho": ancho_horizontal},
+            {"id": "R5", "orientacion": "vertical",
+             "p1": (xParedIzq+off, left1-ancho_vertical/2),
+             "p2": (xParedIzq+off, left1+ancho_vertical/2),
+             "lengüeta": "T5", "ancho": ancho_vertical},
+            {"id": "R6", "orientacion": "vertical",
+             "p1": (xParedIzq+off, left2-ancho_vertical/2),
+             "p2": (xParedIzq+off, left2+ancho_vertical/2),
+             "lengüeta": "T6", "ancho": ancho_vertical},
+            {"id": "R7", "orientacion": "vertical",
+             "p1": (xParedDer-off, right1-ancho_vertical/2),
+             "p2": (xParedDer-off, right1+ancho_vertical/2),
+             "lengüeta": "T7", "ancho": ancho_vertical},
+            {"id": "R8", "orientacion": "vertical",
+             "p1": (xParedDer-off, right2-ancho_vertical/2),
+             "p2": (xParedDer-off, right2+ancho_vertical/2),
+             "lengüeta": "T8", "ancho": ancho_vertical},
         ]
 
         paneles = [
@@ -418,22 +699,7 @@ def geometria(r: Resultado):
             ("solapa derecha", (xParedDer, right_top), (xSolapaDer, right_bottom)),
         ]
 
-        lengüetas = [
-            ("L1", [(back_cx-tab_t/2, yT), (back_cx-tab_t/2+chaflan, 0),
-                    (back_cx+tab_t/2-chaflan, 0), (back_cx+tab_t/2, yT)], tab_t),
-            ("L2", [(xSolapaIzq, left_cy-tab_i/2),
-                    (xSolapaIzq-tab_l, left_cy-tab_i/2+chaflan),
-                    (xSolapaIzq-tab_l, left_cy+tab_i/2-chaflan),
-                    (xSolapaIzq, left_cy+tab_i/2)], tab_i),
-            ("L3", [(front_cx-tab_f/2, yEnd),
-                    (front_cx-tab_f/2+chaflan, yEnd+tab_l),
-                    (front_cx+tab_f/2-chaflan, yEnd+tab_l),
-                    (front_cx+tab_f/2, yEnd)], tab_f),
-            ("L4", [(xSolapaDer, right_cy-tab_derecha/2),
-                    (xSolapaDer+tab_l, right_cy-tab_derecha/2+chaflan),
-                    (xSolapaDer+tab_l, right_cy+tab_derecha/2-chaflan),
-                    (xSolapaDer, right_cy+tab_derecha/2)], tab_derecha),
-        ]
+        lengüetas = []
 
         return dict(
             x0=x0, xB0=xB0, xB1=xB1, xF=xF, yT=yT, ySw=ySw, yB0=yB0, yB1=yB1,
@@ -447,7 +713,13 @@ def geometria(r: Resultado):
             xParedDer=xParedDer, xSolapaDer=xSolapaDer,
             paneles=paneles,
             lengüetas=lengüetas,
-            tabs={"L1": tab_t, "L2": tab_i, "L3": tab_f, "L4": tab_derecha},
+            tabs={
+                "T1": ancho_horizontal, "T2": ancho_horizontal,
+                "T3": ancho_horizontal, "T4": ancho_horizontal,
+                "T5": ancho_vertical, "T6": ancho_vertical,
+                "T7": ancho_vertical, "T8": ancho_vertical,
+                "L1": tab_t, "L2": tab_i, "L3": tab_f, "L4": tab_derecha,
+            },
             orden_puntos=[
                 (xB0-30, yB0-30),
                 (xParedIzq-12, ySw-12),
@@ -691,10 +963,11 @@ def pasos(r: Resultado) -> list[str]:
         P.append(f"7) SOLAPAS ACORTADAS: trasera/frontal = {f(d['solapa_trasera_l'])} mm de largo "
                  f"(Lb − 2(t+d)), centradas sobre sus paredes; izquierda/derecha = "
                  f"{f(d['solapa_lateral_l'])} mm (Wb − 2(2t+d)), centradas sobre sus paredes.")
-        P.append(f"8) LENGÜETAS: L1 sobre trasera: ancho {f(d['tab_trasera'])} mm; "
-                 f"L2 sobre izquierda: ancho {f(d['tab_izquierda'])} mm; "
-                 f"L3 sobre frontal: ancho {f(d['tab_frontal'])} mm; "
-                 f"L4 sobre derecha: ancho {f(d['tab_derecha'])} mm. Alto común 15 mm, chaflán 3 mm.")
+        tapa_actual = calcular_tapa(r)
+        P.append("8) CIERRE: ocho lengüetas T1–T8 en la tapa externa; "
+                 "pestañas internas de 15 mm y chaflán de 3 mm.")
+        P.append(f"   T1/T2/T3/T4: {f(tapa_actual.tabs['T1'])} mm; "
+                 f"T5/T6/T7/T8: {f(tapa_actual.tabs['T5'])} mm.")
         P.append(f"9) CORTE DE ORIGEN: desplaza X = {f(d['tab_alto'])} mm y Y = {f(d['tab_alto'])} mm "
                  "para que todas las lengüetas queden dentro del lienzo.")
         for ranura in g["ranuras"]:
@@ -705,8 +978,7 @@ def pasos(r: Resultado) -> list[str]:
         P.append(f"11) DISTANCIA CALIBRABLE DE RANURA: t+d+t/2 = "
                  f"{r.t:.1f}+{r.d:.1f}+{r.t/2:.1f} = {f(d['off_encastre'])} mm "
                  "desde el pliegue correspondiente.")
-        P.append("12) LÍNEAS DE CORTE: recorre una sola vez el contorno cerrado; "
-                 "incluye las cuatro lengüetas como parte del polígono.")
+        P.append("12) LÍNEAS DE CORTE: recorre una sola vez el contorno cerrado del cuerpo.")
         P.append("13) LÍNEAS DE PLIEGUE: sólo hundir, nunca cortar:")
         for (a, b) in g["pliegues"]:
             P.append(f"     de ({f(a[0])}, {f(a[1])}) a ({f(b[0])}, {f(b[1])})")
@@ -718,7 +990,7 @@ def pasos(r: Resultado) -> list[str]:
         P.append("15) ARMADO PREVIO AL ENCASTRE: 1) levanta las 4 paredes; "
                  "2) dobla las orejas hacia adentro; 3) inserta el panal; "
                  "4) dobla las solapas sobre orejas y panal; "
-                 "5) encastra L1↔R1, L2↔R2, L3↔R3 y L4↔R4.")
+                 "5) encastra T1↔R1 ... T8↔R8.")
         P.append("16) CALIDAD: tolerancia de corte ±1 mm; prueba de caída a 1 m sobre 6 caras y esquinas.")
         for advertencia in r.advertencias:
             P.append(f"ADVERTENCIA: {advertencia}")
@@ -806,16 +1078,6 @@ def svg_legacy(r: Resultado, escala: float = 1.0) -> str:
             px, py = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
             out.append(f'<text x="{px:.1f}" y="{py-4:.1f}" font-size="9" text-anchor="middle" '
                        f'fill="#1f6f8b" font-weight="bold">{ranura["lengüeta"]}↔{ranura["id"]}</text>')
-        for label, cx, cy in (
-            ("L1", g["back_cx"], g["yT"] - r.encastre_datos["tab_alto"] / 2),
-            ("L2", r.encastre_datos["tab_alto"] / 2, g["left_cy"]),
-            ("L3", g["front_cx"], g["yEnd"] + r.encastre_datos["tab_alto"] / 2),
-            ("L4", g["xF"] + r.encastre_datos["tab_alto"] / 2, g["right_cy"]),
-        ):
-            p = tr((cx, cy))
-            out.append(f'<circle cx="{p[0]:.1f}" cy="{p[1]:.1f}" r="9" fill="#fff" stroke="#1f6f8b" stroke-width="1"/>'
-                       f'<text x="{p[0]:.1f}" y="{p[1]+3:.1f}" font-size="9" text-anchor="middle" '
-                       f'fill="#1f6f8b" font-weight="bold">{label}</text>')
     else:
         a, b = tr(g["ranura"][0]), tr(g["ranura"][1])
         out.append(f'<line x1="{a[0]:.2f}" y1="{a[1]:.2f}" x2="{b[0]:.2f}" y2="{b[1]:.2f}" stroke="#222" stroke-width="2.4"/>')
@@ -1000,15 +1262,6 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
             px, py = (aa[0]+bb[0])/2, (aa[1]+bb[1])/2
             out.append(f'<text x="{px:.1f}" y="{py-4:.1f}" font-size="8" fill="#1f6f8b" '
                        f'text-anchor="middle" font-weight="bold">{ranura["lengüeta"]} / {ranura["id"]}</text>')
-        for label, cx, cy in (
-            ("L1", g["back_cx"], g["yT"]-r.encastre_datos["tab_alto"]/2),
-            ("L2", r.encastre_datos["tab_alto"]/2, g["left_cy"]),
-            ("L3", g["front_cx"], g["yEnd"]+r.encastre_datos["tab_alto"]/2),
-            ("L4", g["xF"]-r.encastre_datos["tab_alto"]/2, g["right_cy"]),
-        ):
-            px, py = tr((cx, cy))
-            out.append(f'<text x="{px:.1f}" y="{py+3:.1f}" font-size="9" fill="#1f6f8b" '
-                       f'text-anchor="middle" font-weight="bold">{label}</text>')
 
     # Cotas directas sobre la cruz.
     d = r.encastre_datos
@@ -1071,15 +1324,97 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
                f'text-anchor="middle" transform="rotate(-90 {cx-34:.1f} {oy+cross_h/2:.1f})">'
                f'{formato_mm(cross_h)} total</text>')
 
+    # Troquel completo de la tapa externa integrado al plano principal.
+    tapa = calcular_tapa(r)
+    geometria_tapa_resultado = geometria_tapa(tapa)
+    tapa_x = W / 2 - detail_w / 2
+    tapa_y = margin + 35
+    out.append(
+        f'<rect x="{tapa_x:.1f}" y="{tapa_y:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" '
+        f'rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
+        f'<text x="{tapa_x+12:.1f}" y="{tapa_y+18:.1f}" font-size="11" font-weight="bold">'
+        f'TAPA EXTERNA · pestaña interna</text>'
+    )
+
+    tapa_puntos = geometria_tapa_resultado["contorno"]
+    tapa_xs = [p[0] for p in tapa_puntos]
+    tapa_ys = [p[1] for p in tapa_puntos]
+    tapa_min_x, tapa_max_x = min(tapa_xs), max(tapa_xs)
+    tapa_min_y, tapa_max_y = min(tapa_ys), max(tapa_ys)
+    tapa_ancho = tapa_max_x - tapa_min_x
+    tapa_alto = tapa_max_y - tapa_min_y
+    tapa_escala = min(220.0/tapa_ancho, 78.0/tapa_alto)
+    tapa_inicio_x = tapa_x + (detail_w-tapa_ancho*tapa_escala)/2
+    tapa_inicio_y = tapa_y + 42 + (82-tapa_alto*tapa_escala)/2
+
+    def transformar_tapa(p):
+        return (
+            tapa_inicio_x+(p[0]-tapa_min_x)*tapa_escala,
+            tapa_inicio_y+(p[1]-tapa_min_y)*tapa_escala,
+        )
+
+    tapa_polygon = " ".join(
+        f"{transformar_tapa(p)[0]:.1f},{transformar_tapa(p)[1]:.1f}"
+        for p in tapa_puntos
+    )
+    out.append(
+        f'<polygon points="{tapa_polygon}" fill="#f4efe2" stroke="#222" '
+        f'stroke-width="1.5" stroke-linejoin="round"/>'
+    )
+    for a, b in geometria_tapa_resultado["pliegues"]:
+        pa, pb = transformar_tapa(a), transformar_tapa(b)
+        out.append(
+            f'<line x1="{pa[0]:.1f}" y1="{pa[1]:.1f}" x2="{pb[0]:.1f}" y2="{pb[1]:.1f}" '
+            f'stroke="#2e7d4f" stroke-width="1" stroke-dasharray="5 4"/>'
+        )
+    for label, poligono, ancho in geometria_tapa_resultado["lengüetas"]:
+        pts = " ".join(
+            f"{transformar_tapa(p)[0]:.1f},{transformar_tapa(p)[1]:.1f}"
+            for p in poligono
+        )
+        out.append(
+            f'<polygon points="{pts}" fill="#fff" fill-opacity=".35" '
+            f'stroke="#111" stroke-width="0.8"/>'
+        )
+
+    panel_x1, panel_y1 = transformar_tapa((geometria_tapa_resultado["x0"], geometria_tapa_resultado["y0"]))
+    panel_x2, panel_y2 = transformar_tapa((geometria_tapa_resultado["x1"], geometria_tapa_resultado["y1"]))
+    panel_cx = (panel_x1+panel_x2)/2
+    panel_cy = (panel_y1+panel_y2)/2
+    out.append(
+        f'<rect x="{min(panel_x1,panel_x2):.1f}" y="{min(panel_y1,panel_y2):.1f}" '
+        f'width="{abs(panel_x2-panel_x1):.1f}" height="{abs(panel_y2-panel_y1):.1f}" '
+        f'fill="#ebd5a4" fill-opacity=".45" stroke="#777" stroke-width=".8"/>'
+        f'<text x="{panel_cx:.1f}" y="{panel_cy:.1f}" font-size="8" '
+        f'text-anchor="middle">SUPERIOR</text>'
+    )
+
+    datos_x1 = tapa_x+10
+    datos_x2 = tapa_x+155
+    datos_y = tapa_y+detail_h-66
+    out.append(
+        f'<text x="{datos_x1:.1f}" y="{datos_y:.1f}" font-size="7.5" font-weight="bold" fill="#263238">Panel superior</text>'
+        f'<text x="{datos_x1:.1f}" y="{datos_y+12:.1f}" font-size="7.5" fill="#263238">Largo: {formato_mm(tapa.largo_top)} mm</text>'
+        f'<text x="{datos_x1:.1f}" y="{datos_y+24:.1f}" font-size="7.5" fill="#263238">Ancho: {formato_mm(tapa.ancho_top)} mm</text>'
+        f'<text x="{datos_x1:.1f}" y="{datos_y+36:.1f}" font-size="7.5" fill="#263238">Faldón externo: 15 mm</text>'
+        f'<text x="{datos_x2:.1f}" y="{datos_y:.1f}" font-size="7.5" font-weight="bold" fill="#263238">Cierre</text>'
+        f'<text x="{datos_x2:.1f}" y="{datos_y+12:.1f}" font-size="7.5" fill="#263238">Pestaña interna: 15 mm</text>'
+        f'<text x="{datos_x2:.1f}" y="{datos_y+24:.1f}" font-size="7.5" fill="#263238">T1-T8: lengüetas numeradas</text>'
+        f'<text x="{datos_x2:.1f}" y="{datos_y+36:.1f}" font-size="7.5" fill="#263238">R1-R8: ranuras coincidentes</text>'
+        f'<text x="{datos_x1:.1f}" y="{tapa_y+detail_h-10:.1f}" font-size="7.5" fill="#263238">'
+        f'Altura lengüeta: 15 mm · chaflán: 3 mm</text>'
+    )
+
     # Recuadros A y B fuera de la cruz.
     ax, ay = margin, margin+35
     bx = W-margin-detail_w
     by = margin+35
     out.append(f'<rect x="{ax:.1f}" y="{ay:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
                f'<text x="{ax+12:.1f}" y="{ay+18:.1f}" font-size="11" font-weight="bold">DETALLE A · lengüeta ampliada</text>')
-    aw = r.encastre_datos["tab_trasera"]
-    chaflan = r.encastre_datos["tab_chaflan"]
-    alto_tab = r.encastre_datos["tab_alto"]
+    tapa_detalle = calcular_tapa(r)
+    aw = tapa_detalle.tabs["T1"]
+    chaflan = tapa_detalle.tab_chaflan
+    alto_tab = tapa_detalle.tab_alto
     punta = max(0.0, aw-2*chaflan)
 
     # Vista ampliada proporcional a las medidas reales de la lengüeta.
@@ -1137,10 +1472,10 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
     out.append(f'<rect x="{bx:.1f}" y="{by:.1f}" width="{detail_w:.1f}" height="{detail_h:.1f}" rx="5" fill="#fbfbfb" stroke="#aab4aa"/>'
                f'<text x="{bx+12:.1f}" y="{by+18:.1f}" font-size="11" font-weight="bold">DETALLE B · ranura ampliada</text>')
     off = r.encastre_datos["off_encastre"]
-    r1 = r.encastre_datos["tab_trasera"] + 1
-    r2 = r.encastre_datos["tab_izquierda"] + 1
-    r3 = r.encastre_datos["tab_frontal"] + 1
-    r4 = r.encastre_datos["tab_derecha"] + 1
+    r1 = tapa_detalle.tabs["T1"] + 1
+    r2 = tapa_detalle.tabs["T5"] + 1
+    r3 = tapa_detalle.tabs["T3"] + 1
+    r4 = tapa_detalle.tabs["T7"] + 1
     escala_base = min(190.0 / r.Lb, 112.0 / r.Wb)
     base_w = r.Lb * escala_base
     base_h = r.Wb * escala_base
@@ -1187,7 +1522,7 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
     out.append(f'<text x="{bx+12:.1f}" y="{by+38:.1f}" font-size="9" fill="#c0392b">'
                f'Distancia al pliegue: {formato_mm(off)} mm</text>'
                f'<text x="{bx+12:.1f}" y="{by+52:.1f}" font-size="8" fill="#777">'
-               f'Largo = ancho de L1–L4 + 1 mm</text>'
+               f'Ranuras R1–R8 · coincide con T1–T8</text>'
                f'<text x="{bx+12:.1f}" y="{by+190:.1f}" font-size="8" fill="#777">'
                f'Corte continuo · centrada sobre su lengüeta</text>')
 
@@ -1202,7 +1537,7 @@ def svg(r: Resultado, escala: float = 1.0) -> str:
         f'<text x="{ley_x+155:.1f}" y="{ley_y+44:.1f}" font-size="9">pliegue</text>',
         f'<line x1="{ley_x+205:.1f}" y1="{ley_y+40:.1f}" x2="{ley_x+248:.1f}" y2="{ley_y+40:.1f}" stroke="#1f6f8b" stroke-width="4"/>',
         f'<text x="{ley_x+255:.1f}" y="{ley_y+44:.1f}" font-size="9">ranura</text>',
-        f'<text x="{ley_x+12:.1f}" y="{ley_y+52:.1f}" font-size="8">L1-L4 · lengüetas · R1-R4 · ranuras</text>',
+        f'<text x="{ley_x+12:.1f}" y="{ley_y+52:.1f}" font-size="8">T1-T8 · lengüetas de tapa · R1-R8 · ranuras del cuerpo</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+60:.1f}" font-size="9">Medidas en mm, ancho × alto tal como se ven.</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+74:.1f}" font-size="9">Los pliegues coinciden con los bordes de cada panel.</text>',
         f'<text x="{ley_x+12:.1f}" y="{ley_y+94:.1f}" font-size="11" font-weight="bold">DATOS</text>',
@@ -1301,4 +1636,11 @@ def a_dict(r: Resultado) -> dict:
     d = asdict(r)
     d["panal"] = tiras_panal(r)
     d["geometria"] = {k: v for k, v in geometria(r).items()}
+    tapa = calcular_tapa(r)
+    d["tapa"] = {
+        "medidas": asdict(tapa),
+        "geometria": geometria_tapa(tapa),
+        "pasos": pasos_tapa(r),
+        "svg": svg_tapa(r),
+    }
     return d

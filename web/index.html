@@ -104,13 +104,25 @@
         <button id="download" class="secondary" type="button" disabled>Descargar SVG</button>
         <button id="download-png" class="secondary" type="button" disabled>Descargar PNG</button>
         <button id="download-pdf" class="secondary" type="button" disabled>Descargar PDF 1:1</button>
+        <button id="download-tapa" class="secondary" type="button" disabled>Descargar tapa SVG</button>
         <p id="status" class="status" role="status" aria-live="polite"></p>
       </form>
 
       <section class="card">
-        <h2>Vista previa del SVG</h2>
-        <div id="preview" class="preview">
-          <p class="empty">Completa las medidas para ver el troquel.</p>
+        <h2>Vista previa de los SVG</h2>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+          <div>
+            <h3>Troquel</h3>
+            <div id="preview" class="preview">
+              <p class="empty">Completa las medidas para ver el troquel.</p>
+            </div>
+          </div>
+          <div>
+            <h3>Tapa externa</h3>
+            <div id="preview-tapa" class="preview">
+              <p class="empty">La tapa se mostrará aquí.</p>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -126,12 +138,15 @@
     const unidad = document.querySelector("#unidad");
     const flauta = document.querySelector("#flauta");
     const preview = document.querySelector("#preview");
+    const previewTapa = document.querySelector("#preview-tapa");
     const status = document.querySelector("#status");
     const generate = document.querySelector("#generate");
     const download = document.querySelector("#download");
     const downloadPng = document.querySelector("#download-png");
     const downloadPdf = document.querySelector("#download-pdf");
+    const downloadTapa = document.querySelector("#download-tapa");
     let svg = "";
+    let svgTapa = "";
 
     function actualizarRango() {
       const esCm = unidad.value === "cm";
@@ -174,6 +189,7 @@
       download.disabled = true;
       downloadPng.disabled = true;
       downloadPdf.disabled = true;
+      downloadTapa.disabled = true;
       const datos = Object.fromEntries(new FormData(form));
       datos.encastre = true;
       for (const campo of ["largo", "ancho", "alto"]) datos[campo] = Number(datos[campo]);
@@ -192,10 +208,13 @@
         if (!response.ok) throw new Error(await leerError(response));
         const resultado = await response.json();
         svg = resultado.svg;
+        svgTapa = resultado.tapa ? resultado.tapa.svg : "";
         preview.innerHTML = svg;
+        previewTapa.innerHTML = svgTapa || '<p class="empty">La tapa no está disponible.</p>';
         download.disabled = false;
         downloadPng.disabled = false;
         downloadPdf.disabled = false;
+        downloadTapa.disabled = !svgTapa;
         const advertencias = resultado.medidas.advertencias || [];
         if (advertencias.length) {
           status.textContent = `⚠ ${advertencias.join(" ")}`;
@@ -220,6 +239,15 @@
       const enlace = document.createElement("a");
       enlace.href = URL.createObjectURL(new Blob([svg], {type: "image/svg+xml"}));
       enlace.download = "nido_troquel.svg";
+      enlace.click();
+      URL.revokeObjectURL(enlace.href);
+    });
+
+    downloadTapa.addEventListener("click", () => {
+      if (!svgTapa) return;
+      const enlace = document.createElement("a");
+      enlace.href = URL.createObjectURL(new Blob([svgTapa], {type: "image/svg+xml"}));
+      enlace.download = "nido_tapa.svg";
       enlace.click();
       URL.revokeObjectURL(enlace.href);
     });

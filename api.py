@@ -101,6 +101,12 @@ def troquel(request: TroquelRequest) -> dict:
         },
         "pasos": nc.pasos(resultado),
         "svg": nc.svg(resultado),
+        "tapa": {
+            "medidas": nc.asdict(nc.calcular_tapa(resultado)),
+            "geometria": nc.geometria_tapa(nc.calcular_tapa(resultado)),
+            "pasos": nc.pasos_tapa(resultado),
+            "svg": nc.svg_tapa(resultado),
+        },
     }
     if request.debug_coordenadas:
         respuesta["pasos"] = nc.pasos(resultado)
