@@ -354,6 +354,13 @@ def test_app_no_generar_png():
     assert "svg2png" not in app_text
 
 
+def test_api_publica_la_interfaz_por_el_mismo_dominio():
+    response = CLIENT.get("/")
+
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+
 def test_svg_no_muestra_cotas_antiguas():
     resultado = nc.calcular(entrada_valida(largo=120, ancho=80, alto=100), CONFIG)
     svg = nc.svg(resultado)

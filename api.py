@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException #type: ignore[import-not-found]
 from fastapi.middleware.cors import CORSMiddleware #type: ignore[import-not-found]
 from pydantic import BaseModel #type: ignore[import-not-found]
+from fastapi.responses import FileResponse #type: ignore[import-not-found]
 from typing import Literal
+from pathlib import Path
 
 import nido_core as nc
 from config import cargar_configuracion
@@ -15,6 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 CONFIG = cargar_configuracion()
+WEB_INDEX = Path(__file__).with_name("web") / "index.html"
 
 
 class TroquelRequest(BaseModel):
@@ -59,6 +62,11 @@ def opciones() -> dict[str, list[str]]:
         "materiales": list(nc.MATERIAL_PRODUCTO),
         "flautas": [flauta[0] for flauta in CONFIG.flautas],
     }
+
+
+@app.get("/")
+def index() -> FileResponse:
+    return FileResponse(WEB_INDEX)
 
 
 @app.post("/troquel")
